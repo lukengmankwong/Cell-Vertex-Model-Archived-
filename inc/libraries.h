@@ -17,5 +17,4 @@ typedef CGAL::Delaunay_triangulation_caching_degeneracy_removal_policy_2<DT> AP;
 typedef DT::Point                                                         Point;
 typedef CGAL::Voronoi_diagram_2<DT,AT,AP>                                    VD;
 
-
 #endif // LIBRARIES_H

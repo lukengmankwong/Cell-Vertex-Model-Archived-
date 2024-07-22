@@ -13,22 +13,29 @@
 class Cell
 {
 private:
-    int id;
 
-    std::unordered_map<int, Vertex>* vertex_map;
-    std::unordered_map<int, Edge>* edge_map;
-
-    std::vector<int> vertex_indices; //indices to cell vertices in vertex list
-    std::vector<int> edge_indices; //indices to cell edges in edge list
+	const int id;
+	
+    std::unordered_set<int> vertex_keys;
+    std::unordered_set<int> edge_keys;
 
     Point centroid;
     double area;
+    
+    std::unordered_map<int, Vertex>* vertex_map_ptr; int* vertex_counter_ptr;
+    std::unordered_map<int, Edge>* edge_map_ptr; int* edge_counter_ptr;
+    std::unordered_map<int, Cell>* cell_map_ptr; int* cell_counter_ptr;
 
 public:
 
-    Cell(int id, std::unordered_map<int, Vertex>* vertex_map, std::vector<int>& vertex_indices, std::unordered_map<int, Edge>* edge_map, std::vector<int>& edge_indices);
+    Cell(int* vertex_counter_ptr, std::unordered_map<int, Vertex>* vertex_map_ptr, std::vector<int>& vertex_keys,
+     int* edge_counter_ptr, std::unordered_map<int, Edge>* edge_map_ptr, std::vector<int>& edge_keys, 
+     int* cell_counter_ptr, std::unordered_map<int, Cell>* cell_map_ptr);
+     
     ~Cell();
-    void kill();
+    
+    void removeEdges();
+    void removeVertices();
     void extrude();
 
     void calcCentroid();
@@ -37,8 +44,9 @@ public:
     const int getID() const;
     const Point& getCentroid() const;
     double getArea() const;
-    const std::vector<int>& getVertices() const;
-    const std::vector<int>& getEdges() const;
+    const std::unordered_set<int>& getVertices() const;
+    const std::unordered_set<int>& getEdges() const;
 
 };
+
 #endif // CELL_H

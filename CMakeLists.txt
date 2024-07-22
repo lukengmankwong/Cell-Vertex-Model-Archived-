@@ -18,4 +18,8 @@ find_package(CGAL REQUIRED)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
-target_link_libraries(${PROJECT_NAME} CGAL::CGAL)
+
+
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
+target_link_libraries(${PROJECT_NAME} CGAL::CGAL Eigen3::Eigen)

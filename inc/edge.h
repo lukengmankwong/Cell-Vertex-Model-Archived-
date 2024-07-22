@@ -8,14 +8,14 @@
 class Edge
 {
 private:
-    std::unordered_map<int, Edge>* edge_map;
-    int id;
-
+    const int id;
     std::pair<int, int> e;
+    
     int cell_junction_count;
-
     double length;
-
+    
+    std::unordered_map<int, Edge>* edge_map;
+    
 public:
     Edge(std::unordered_map<int, Edge>* edge_map, int id, int v1, int v2);
     bool operator==(const Edge& other) const;
@@ -23,10 +23,12 @@ public:
     void addCellJunction();
     void removeCellJunction();
     int getCellJunctions() const;
+    
+    const int getID() const;
 
     const std::pair<int, int>& getE() const;
     
-    //void calcLength(std::vector<Vertex>& vertices);
+    bool swapVertex(int v_old, int v_new);
 
 };
 
