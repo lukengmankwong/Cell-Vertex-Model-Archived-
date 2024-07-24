@@ -3,7 +3,9 @@
 
 #include <cmath>
 #include <utility>
-#include <unordered_map>
+
+#include "globals.h"
+
 
 class Edge
 {
@@ -14,21 +16,20 @@ private:
     int cell_junction_count;
     double length;
     
-    std::unordered_map<int, Edge>* edge_map;
-    
 public:
-    Edge(std::unordered_map<int, Edge>* edge_map, int id, int v1, int v2);
+    Edge(int id, int v1, int v2);
     bool operator==(const Edge& other) const;
+    
+    const int getID() const;
+    const std::pair<int, int>& getE() const;
+    int getCellJunctions() const;
 
     void addCellJunction();
     void removeCellJunction();
-    int getCellJunctions() const;
-    
-    const int getID() const;
-
-    const std::pair<int, int>& getE() const;
     
     bool swapVertex(int v_old, int v_new);
+    
+    void calcLength();
 
 };
 

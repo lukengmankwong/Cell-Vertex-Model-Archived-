@@ -1,11 +1,11 @@
 #include "functions.h"
 
 
-void getInitialData(VD& vd,  std::unordered_map<int, Vertex>& vertex_map, std::unordered_map<int, Edge>& edge_map, std::unordered_map<int, Cell>& cell_map, int& vertex_counter, int& edge_counter, int& cell_counter)
+void getInitialData(VD& vd, bool (*in)(const Point&))
 {
     std::cout << "COLLECTING INITIAL DATA\n";
 	for (VD::Vertex_iterator vit = vd.vertices_begin(); vit != vd.vertices_end(); vit++) { //iterate through vertices in VD container and create vertex objects from points
-        vertex_map.emplace( vertex_counter, Vertex(&vertex_counter, &vertex_map, &edge_map, vit->point()) ); //save vertex to vertex_map
+        vertex_map.emplace( vertex_counter, Vertex(vertex_counter, (Point)vit->point()) ); //save vertex to vertex_map
         vertex_counter++;
 
     }
@@ -31,7 +31,7 @@ void getInitialData(VD& vd,  std::unordered_map<int, Vertex>& vertex_map, std::u
         std::vector<int> cell_edge_indices; //edges of given cell/face
         for (int i = 0; i < cell_vertex_indices.size(); i++)  //iterate through cell vertices
         {
-            Edge edge(&edge_map, edge_counter, cell_vertex_indices[i], cell_vertex_indices[(i+1)%cell_vertex_indices.size()]); //edge with two vertices from cell
+            Edge edge(edge_counter, cell_vertex_indices[i], cell_vertex_indices[(i+1)%cell_vertex_indices.size()]); //edge with two vertices from cell
             bool new_edge = true;
             for (auto& edge_pair : edge_map) { //iterate through found edges
                 if (edge == edge_pair.second) {
@@ -53,7 +53,7 @@ void getInitialData(VD& vd,  std::unordered_map<int, Vertex>& vertex_map, std::u
             }
         }
 
-        cell_map.emplace(cell_counter, Cell(&vertex_counter, &vertex_map, cell_vertex_indices, &edge_counter, &edge_map, cell_edge_indices, &cell_counter, &cell_map));
+        cell_map.emplace(cell_counter, Cell(cell_counter, cell_vertex_indices, cell_edge_indices));
         cell_counter++;
     }
 
@@ -62,10 +62,9 @@ void getInitialData(VD& vd,  std::unordered_map<int, Vertex>& vertex_map, std::u
         if (cell.second.getVertices().size() <= 2) { cells_to_remove.insert(cell.first); }
     }
 	for (const auto& vertex : vertex_map) {
-		if ((vertex.second.getR().x()*vertex.second.getR().x() + vertex.second.getR().y()*vertex.second.getR().y() < 0.075) || (vertex.second.getR().x()*vertex.second.getR().x() + vertex.second.getR().y()*vertex.second.getR().y() > 0.25) ) {
-			cells_to_remove.insert(vertex.second.getCellContacts().begin(), vertex.second.getCellContacts().end());
-		}
+		if ( !in(vertex.second.getR()) ) { cells_to_remove.insert(vertex.second.getCellContacts().begin(), vertex.second.getCellContacts().end()); }
 	}
+	
     for (int c : cells_to_remove) { cell_map.at(c).removeEdges(); }
 	for (int c : cells_to_remove) { cell_map.at(c).removeVertices(); }
 	for (int c : cells_to_remove) { cell_map.erase(c); }
@@ -73,27 +72,25 @@ void getInitialData(VD& vd,  std::unordered_map<int, Vertex>& vertex_map, std::u
 }
 
 
-void runSimulation(std::unordered_map<int, Vertex>& vertex_map, std::unordered_map<int, Edge>& edge_map, std::unordered_map<int, Cell>& cell_map, int time_steps)
+void runSimulation(int time_steps)
 {
+
     for (int step = 0; step < time_steps; step++)
     { 
 		WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(step) + ".vtk");
-        for (auto& cell : cell_map) { //calculate forces
-            cell.second.calcCentroid();
-            for (int vertex_id : cell.second.getVertices()) {
-                vertex_map.at(vertex_id).calcForce(cell.second.getCentroid());
-            }
-        }
+
+		for (auto& cell : cell_map) { 
+			cell.second.calcArea(); 
+			cell.second.calcT();
+			cell.second.calcG();
+		} 
+		for (auto& vertex : vertex_map) {
+			vertex.second.calcForce(Point(0,0));
+		}
         for (auto& vertex : vertex_map) {
             vertex.second.applyForce();
         }
-        /*for (auto& cell : cell_map) {
-			cell.second.calcArea();
-			if (cell.first == 50) {
-				cell.second.extrude();
-			}
-		}*/
-		for (auto& cell : cell_map) { cell.second.calcG(); }
+		
     }
     WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(timesteps) + ".vtk");
 }

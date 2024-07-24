@@ -1,18 +1,21 @@
 #include "cell.h"
 
 
-Cell::Cell(int* vertex_counter_ptr, std::unordered_map<int, Vertex>* vertex_map_ptr, std::vector<int>& vertex_keys, 
-	 int* edge_counter_ptr, std::unordered_map<int, Edge>* edge_map_ptr, std::vector<int>& edge_keys,
-	 int* cell_counter_ptr, std::unordered_map<int, Cell>* cell_map_ptr) :
-	 
-vertex_counter_ptr(vertex_counter_ptr), vertex_map_ptr(vertex_map_ptr), edge_counter_ptr(edge_counter_ptr), edge_map_ptr(edge_map_ptr), cell_counter_ptr(cell_counter_ptr), cell_map_ptr(cell_map_ptr), id(*cell_counter_ptr)
+Cell::Cell(int id, std::vector<int>& vertex_keys, std::vector<int>& edge_keys) : id(id)
 {
 	this->vertex_keys = std::unordered_set<int>(vertex_keys.begin(), vertex_keys.end());
 	this->edge_keys = std::unordered_set<int>(edge_keys.begin(), edge_keys.end());
-	//(*cell_counter_ptr)++;
+	A = A_0;
+	dA =  0.0001;
 }
 
-Cell::~Cell() {}
+const int Cell::getID() const { return id; }
+const Point& Cell::getCentroid() const { return centroid; }
+double Cell::getA() const { return A; }
+double Cell::getdA() const { return dA; }
+double Cell::getT() const { return T; }
+const std::unordered_set<int>& Cell::getVertices() const { return vertex_keys; }
+const std::unordered_set<int>& Cell::getEdges() const {return edge_keys; }
 
 
 bool Cell::removeEdge(int edge_id)
@@ -20,17 +23,16 @@ bool Cell::removeEdge(int edge_id)
     auto it = edge_keys.find(edge_id);
     if (it != edge_keys.end()) {
 		edge_keys.erase(edge_id);
-		edge_map_ptr->at(edge_id).removeCellJunction();
+		edge_map.at(edge_id).removeCellJunction();
 		return true;
 	} else { return false; }
 }
-
 bool Cell::removeVertex(int vertex_id)
 {
     auto it = vertex_keys.find(vertex_id);
     if (it != vertex_keys.end()) {
 		vertex_keys.erase(vertex_id);
-		vertex_map_ptr->at(vertex_id).removeCellContact(id);
+		vertex_map.at(vertex_id).removeCellContact(id);
 		return true;
 	} else { return false; }
 }
@@ -39,35 +41,25 @@ bool Cell::removeVertex(int vertex_id)
 void Cell::removeVertices()
 {
 
-    for (int vertex_key : vertex_keys) {
-        vertex_map_ptr->at(vertex_key).removeCellContact(id);
+    for (int v : vertex_keys) {
+        vertex_map.at(v).removeCellContact(id);
     }
 
 }
 void Cell::removeEdges()
 {
-    for (int edge_key : edge_keys) {
-        edge_map_ptr->at(edge_key).removeCellJunction();
+    for (int e : edge_keys) {
+        edge_map.at(e).removeCellJunction();
     }
 
 }
 
+
 void Cell::extrude()
 {
-	this->calcCentroid();
-	int vertex_count = *vertex_counter_ptr;
-	vertex_map_ptr->emplace(vertex_count, Vertex(vertex_counter_ptr, vertex_map_ptr, edge_map_ptr, centroid)); //create new vertex at centroid of this cell
-	
-	std::unordered_set<int> cell_neighbour_keys;
-	for (int vertex_key : vertex_keys) { cell_neighbour_keys.insert(vertex_map_ptr->at(vertex_key).getCellContacts().begin(), vertex_map_ptr->at(vertex_key).getCellContacts().end()); }
-	//find cells which share a vertex with this cell
-	
-	for (int cell_neighbour_key : cell_neighbour_keys) {
-		for (int edge_key : edge_keys) { cell_map_ptr->at(cell_neighbour_key).removeEdge(edge_key); } //remove edges shared by cell to be extruded from other cells
-	} this->removeEdges();
+
 	
 }
-
 
 
 void Cell::calcCentroid()
@@ -75,17 +67,12 @@ void Cell::calcCentroid()
     K::FT x_sum = 0;
     K::FT y_sum = 0;
 
-    for (int vertex_index : vertex_keys) {
-        x_sum += vertex_map_ptr->at(vertex_index).getR().x();
-        y_sum += vertex_map_ptr->at(vertex_index).getR().y();
+    for (int v : vertex_keys) {
+        x_sum += vertex_map.at(v).getR().x();
+        y_sum += vertex_map.at(v).getR().y();
     }
 
     centroid = Point(x_sum/vertex_keys.size(), y_sum/vertex_keys.size());
-}
-
-void Cell::calcArea()
-{
-    area = 0;
 }
 
 void Cell::calcG()
@@ -97,8 +84,8 @@ void Cell::calcG()
 	double x_0 = centroid.x(); double y_0 = centroid.y();
 	for (int v : vertex_keys)
 	{
-		double x_v = vertex_map_ptr->at(v).getR().x();
-		double y_v = vertex_map_ptr->at(v).getR().y();
+		double x_v = vertex_map.at(v).getR().x();
+		double y_v = vertex_map.at(v).getR().y();
 		G[0]+=(x_v-x_0)*(x_v-x_0); G[1]+=(x_v-x_0)*(y_v-y_0);
 		G[2]+=(x_v-x_0)*(y_v-y_0);
 	}
@@ -111,10 +98,26 @@ void Cell::calcG()
 	director = Vec(1, (lambda-G[0])/G[1]);
 }
 
+void Cell::calcArea()
+{
+	this->calcCentroid();
+	double x_0 = centroid.x(); double y_0 = centroid.y();
+	double A_old = A;
+	A = 0;
+	for (int e : edge_keys) {
+		double x_1 = vertex_map.at(edge_map.at(e).getE().first).getR().x();
+		double y_1 = vertex_map.at(edge_map.at(e).getE().first).getR().y();
+		double x_2 = vertex_map.at(edge_map.at(e).getE().second).getR().x();
+		double y_2 = vertex_map.at(edge_map.at(e).getE().second).getR().y();
+		A += std::fabs( x_0*(y_1-y_2) + x_1*(y_2-y_0) + x_2*(y_0-y_1) );
+	} A *= 0.5;
+	dA = A - A_old;
+}
 
-const int Cell::getID() const { return id; }
-const Point& Cell::getCentroid() const { return centroid; }
-double Cell::getArea() const { return area; }
-const std::unordered_set<int>& Cell::getVertices() const { return vertex_keys; }
-const std::unordered_set<int>& Cell::getEdges() const {return edge_keys; }
+void Cell::calcT()
+{
+	T = k*(A-A_0);
+}
+
+
 

@@ -1,9 +1,7 @@
 #include "edge.h"
-#include <iostream>
 
 
-Edge::Edge(std::unordered_map<int, Edge>* edge_map, int id, int v1, int v2) :
-    edge_map(edge_map), id(id)
+Edge::Edge(int id, int v1, int v2) : id(id)
 {
     (v1 < v2) ? e = std::make_pair(v1, v2) : e = std::make_pair(v2, v1);
     cell_junction_count = 0;
@@ -11,20 +9,19 @@ Edge::Edge(std::unordered_map<int, Edge>* edge_map, int id, int v1, int v2) :
 
 bool Edge::operator==(const Edge& other) const { return ((e.first == other.e.first) && (e.second == other.e.second)); }
 
+const int Edge::getID() const { return id; }
+const std::pair<int, int>& Edge::getE() const { return e; }
+int Edge::getCellJunctions() const { return cell_junction_count; }
 
 void Edge::addCellJunction() { cell_junction_count++; }
 
 void Edge::removeCellJunction() {
     cell_junction_count--;
     if (cell_junction_count == 0) {
-        edge_map->erase(id);
+        edge_map.erase(id);
     }
 }
-int Edge::getCellJunctions() const { return cell_junction_count; }
 
-
-const int Edge::getID() const { return id; }
-const std::pair<int, int>& Edge::getE() const { return e; }
 
 bool Edge::swapVertex(int v_old, int v_new)
 {
@@ -39,3 +36,8 @@ bool Edge::swapVertex(int v_old, int v_new)
 	else { return false;}
 }
 
+
+void Edge::calcLength()
+{
+
+}
