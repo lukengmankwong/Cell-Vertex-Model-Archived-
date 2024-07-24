@@ -1,3 +1,0 @@
-/home/luke/Documents/URSS/Cell-Vertex-Model/build/CMakeFiles/cellvertexmodel.dir
-/home/luke/Documents/URSS/Cell-Vertex-Model/build/CMakeFiles/edit_cache.dir
-/home/luke/Documents/URSS/Cell-Vertex-Model/build/CMakeFiles/rebuild_cache.dir
