@@ -5,7 +5,7 @@ void getInitialData(VD& vd,  std::unordered_map<int, Vertex>& vertex_map, std::u
 {
     std::cout << "COLLECTING INITIAL DATA\n";
 	for (VD::Vertex_iterator vit = vd.vertices_begin(); vit != vd.vertices_end(); vit++) { //iterate through vertices in VD container and create vertex objects from points
-        vertex_map.emplace( vertex_counter, Vertex(vertex_counter, &vertex_counter, &vertex_map, &edge_map, vit->point()) ); //save vertex to vertex_map
+        vertex_map.emplace( vertex_counter, Vertex(&vertex_counter, &vertex_map, &edge_map, vit->point()) ); //save vertex to vertex_map
         vertex_counter++;
 
     }
@@ -58,30 +58,17 @@ void getInitialData(VD& vd,  std::unordered_map<int, Vertex>& vertex_map, std::u
     }
 
 	std::set<int> cells_to_remove;
-	for (const auto& cell : cell_map) 
-    {
-        if (cell.second.getVertices().size() <= 2) {
-			cells_to_remove.insert(cell.first);
-        }
+	for (const auto& cell : cell_map) {
+        if (cell.second.getVertices().size() <= 2) { cells_to_remove.insert(cell.first); }
     }
-	for (const auto& vertex : vertex_map) 
-	{
-		if (abs(vertex.second.getR().x()) > 0.9 || abs(vertex.second.getR().y()) > 0.9 || vertex.second.getR().x() < 0 || vertex.second.getR().y() < 0) {
+	for (const auto& vertex : vertex_map) {
+		if ((vertex.second.getR().x()*vertex.second.getR().x() + vertex.second.getR().y()*vertex.second.getR().y() < 0.075) || (vertex.second.getR().x()*vertex.second.getR().x() + vertex.second.getR().y()*vertex.second.getR().y() > 0.25) ) {
 			cells_to_remove.insert(vertex.second.getCellContacts().begin(), vertex.second.getCellContacts().end());
 		}
 	}
     for (int c : cells_to_remove) { cell_map.at(c).removeEdges(); }
 	for (int c : cells_to_remove) { cell_map.at(c).removeVertices(); }
 	for (int c : cells_to_remove) { cell_map.erase(c); }
-	
-	/*for (int c : cells_to_remove) {
-		std::cout << "Cell to remove (" << c << ") : ";
-		for (int v : cell_map.at(c).getVertices()) { 
-			std::cout << vertex_map.at(v).getR().x() << ' ' << vertex_map.at(v).getR().y() << ", ";
-		} std::cout << '\n';
-	} std::cout << "\nThese were the cells to remove.\n";*/
-
-
 
 }
 
@@ -90,7 +77,7 @@ void runSimulation(std::unordered_map<int, Vertex>& vertex_map, std::unordered_m
 {
     for (int step = 0; step < time_steps; step++)
     { 
-		WriteVTKFile(vertex_map, edge_map, "graph" + std::to_string(step) + ".vtk");
+		WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(step) + ".vtk");
         for (auto& cell : cell_map) { //calculate forces
             cell.second.calcCentroid();
             for (int vertex_id : cell.second.getVertices()) {
@@ -102,12 +89,13 @@ void runSimulation(std::unordered_map<int, Vertex>& vertex_map, std::unordered_m
         }
         /*for (auto& cell : cell_map) {
 			cell.second.calcArea();
-			if (cell.second.getArea() < A_0) {
+			if (cell.first == 50) {
 				cell.second.extrude();
 			}
 		}*/
-
+		for (auto& cell : cell_map) { cell.second.calcG(); }
     }
+    WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(timesteps) + ".vtk");
 }
 
 
@@ -126,7 +114,7 @@ void outputData(const std::unordered_map<int, Vertex>& vertex_map, const std::un
 }
 
 
-void WriteVTKFile(const std::unordered_map<int, Vertex>& vertex_map, const std::unordered_map<int, Edge>& edge_map, const std::string& filename) {
+void WriteVTKFile(const std::unordered_map<int, Vertex>& vertex_map, const std::unordered_map<int, Edge>& edge_map, const std::unordered_map<int, Cell>& cell_map, const std::string& filename) {
 
     // Create a mapping from the original vertex IDs to zero-based indices
     std::unordered_map<int, int> index_map;
@@ -138,7 +126,7 @@ void WriteVTKFile(const std::unordered_map<int, Vertex>& vertex_map, const std::
     for (const auto& vertex : vertex_map) { vtkFile << vertex.second.getR().x() << " " << vertex.second.getR().y() << " " << "0\n"; }
 
     vtkFile << "LINES " << edge_map.size() << " " << edge_map.size() * 3 << '\n';
-    for (const auto& edge : edge_map) { vtkFile << "2 " << index_map[edge.second.getE().first] << " " << index_map[edge.second.getE().second] << '\n'; }
-
+    for (const auto& edge : edge_map) { vtkFile << "2 " << index_map[edge.second.getE().first] << " " << index_map[edge.second.getE().second] << '\n'; }   
+	
     vtkFile.close();
 }

@@ -1,7 +1,8 @@
 #ifndef CELL_H
 #define CELL_H
 
-#include <unordered_map>
+#include <cmath>
+#include <array>
 #include <vector>
 #include <unordered_map>
 
@@ -21,11 +22,14 @@ private:
 
     Point centroid;
     double area;
+    double G[3]; //gyration tensor symmetric so only need 3 values (a b, b c)
+    double lambda; //gyration tensor largest eigenvalue
+    Vec director;
     
     std::unordered_map<int, Vertex>* vertex_map_ptr; int* vertex_counter_ptr;
     std::unordered_map<int, Edge>* edge_map_ptr; int* edge_counter_ptr;
     std::unordered_map<int, Cell>* cell_map_ptr; int* cell_counter_ptr;
-
+    
 public:
 
     Cell(int* vertex_counter_ptr, std::unordered_map<int, Vertex>* vertex_map_ptr, std::vector<int>& vertex_keys,
@@ -33,13 +37,18 @@ public:
      int* cell_counter_ptr, std::unordered_map<int, Cell>* cell_map_ptr);
      
     ~Cell();
-    
+      
+	bool removeEdge(int edge_id);
+	bool removeVertex(int vertex_id);
+        
     void removeEdges();
     void removeVertices();
     void extrude();
 
     void calcCentroid();
     void calcArea();
+    void calcG();
+    void calcLambda();
 
     const int getID() const;
     const Point& getCentroid() const;
