@@ -7,7 +7,6 @@ void getInitialData(VD& vd, bool (*in)(const Point&))
 	for (VD::Vertex_iterator vit = vd.vertices_begin(); vit != vd.vertices_end(); vit++) { //iterate through vertices in VD container and create vertex objects from points
         vertex_map.emplace( vertex_counter, Vertex(vertex_counter, (Point)vit->point()) ); //save vertex to vertex_map
         vertex_counter++;
-
     }
 
     for (VD::Face_iterator fi = vd.faces_begin(); fi != vd.faces_end(); fi++) //iterate through faces in VD container
@@ -36,7 +35,7 @@ void getInitialData(VD& vd, bool (*in)(const Point&))
             for (auto& edge_pair : edge_map) { //iterate through found edges
                 if (edge == edge_pair.second) {
 					cell_edge_indices.push_back(edge_pair.first); //tell cell that it has this edge
-                    edge_pair.second.addCellJunction(); //tell edge that is is part of a new cell
+                    edge_pair.second.addCellJunction(cell_counter); //tell edge that is is part of a new cell
                     vertex_map.at(cell_vertex_indices[i]).addEdgeContact(edge_pair.first); //tell vertices of this edge that they are part of this edge
                     vertex_map.at(cell_vertex_indices[(i+1)%cell_vertex_indices.size()]).addEdgeContact(edge_pair.first);
                     new_edge = false;
@@ -45,7 +44,7 @@ void getInitialData(VD& vd, bool (*in)(const Point&))
             }
             if (new_edge) {
                 edge_map.emplace(edge_counter, edge);
-                edge_map.at(edge_counter).addCellJunction();
+                edge_map.at(edge_counter).addCellJunction(cell_counter);
                 cell_edge_indices.push_back(edge_counter);
                 vertex_map.at(cell_vertex_indices[i]).addEdgeContact(edge_counter);
                 vertex_map.at(cell_vertex_indices[(i+1)%cell_vertex_indices.size()]).addEdgeContact(edge_counter);
@@ -78,24 +77,30 @@ void runSimulation(int time_steps)
     for (int step = 0; step < time_steps; step++)
     { 
 		WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(step) + ".vtk");
-
+		
+		for (auto& edge : edge_map) { edge.second.calcLength(); }
+		
 		for (auto& cell : cell_map) { 
-			cell.second.calcArea(); 
-			cell.second.calcT();
+			cell.second.calcL();
+			cell.second.calcA(); 
+			cell.second.calcT_A();
 			cell.second.calcG();
 		} 
-		for (auto& vertex : vertex_map) {
-			vertex.second.calcForce(Point(0,0));
+		
+		for (auto& edge : edge_map) { edge.second.calcT_l(); }
+
+		for (auto& vertex : vertex_map) { vertex.second.calcForce(Point(0,0)); }
+		
+		for (auto& cell : cell_map) {
+			std::cout << "Cell (" << cell.first << ") L=" << cell.second.getL() << "\tA=" << cell.second.getA() << '\n';
 		}
-        for (auto& vertex : vertex_map) {
-            vertex.second.applyForce();
-        }
+		
+        for (auto& vertex : vertex_map) { vertex.second.applyForce(); }
+        
 		
     }
     WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(timesteps) + ".vtk");
 }
-
-
 
 
 void outputData(const std::unordered_map<int, Vertex>& vertex_map, const std::unordered_map<int, Edge>& edge_map, const std::unordered_map<int, Cell>& cell_map)

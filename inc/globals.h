@@ -30,9 +30,12 @@ extern const int cell_count;
 extern const double dt;
 extern const int timesteps;
 
-extern const double A_0;
+extern const double A_0; //characteristic cell area
+
+extern const double k_A; //spring constant for surface tension
+extern const double k_L; //spring constant for edge tension
+extern const double T_l_0; //independent edge tension
 
 extern const double a;
-extern const double k;
 
 #endif // GLOBALS_H

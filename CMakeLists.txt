@@ -19,5 +19,6 @@ find_package(CGAL REQUIRED)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
+cmake_policy(SET CMP0167 NEW)
 
 target_link_libraries(${PROJECT_NAME} CGAL::CGAL)

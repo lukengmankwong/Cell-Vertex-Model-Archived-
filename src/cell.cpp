@@ -6,24 +6,24 @@ Cell::Cell(int id, std::vector<int>& vertex_keys, std::vector<int>& edge_keys) :
 	this->vertex_keys = std::unordered_set<int>(vertex_keys.begin(), vertex_keys.end());
 	this->edge_keys = std::unordered_set<int>(edge_keys.begin(), edge_keys.end());
 	A = A_0;
-	dA =  0.0001;
 }
 
 const int Cell::getID() const { return id; }
 const Point& Cell::getCentroid() const { return centroid; }
-double Cell::getA() const { return A; }
-double Cell::getdA() const { return dA; }
-double Cell::getT() const { return T; }
+const double Cell::getA() const { return A; }
+const double Cell::getdA() const { return dA; }
+const double Cell::getL() const { return L; }
+const double Cell::getT_A() const { return T_A; }
 const std::unordered_set<int>& Cell::getVertices() const { return vertex_keys; }
-const std::unordered_set<int>& Cell::getEdges() const {return edge_keys; }
+const std::unordered_set<int>& Cell::getEdges() const { return edge_keys; }
 
 
-bool Cell::removeEdge(int edge_id)
+/*bool Cell::removeEdge(int edge_id)
 {
     auto it = edge_keys.find(edge_id);
     if (it != edge_keys.end()) {
 		edge_keys.erase(edge_id);
-		edge_map.at(edge_id).removeCellJunction();
+		edge_map.at(edge_id).removeCellJunction(id);
 		return true;
 	} else { return false; }
 }
@@ -35,30 +35,25 @@ bool Cell::removeVertex(int vertex_id)
 		vertex_map.at(vertex_id).removeCellContact(id);
 		return true;
 	} else { return false; }
-}
+}*/
 
 
 void Cell::removeVertices()
 {
-
     for (int v : vertex_keys) {
         vertex_map.at(v).removeCellContact(id);
     }
-
 }
 void Cell::removeEdges()
 {
     for (int e : edge_keys) {
-        edge_map.at(e).removeCellJunction();
+        edge_map.at(e).removeCellJunction(id);
     }
-
 }
 
 
 void Cell::extrude()
 {
-
-	
 }
 
 
@@ -98,7 +93,7 @@ void Cell::calcG()
 	director = Vec(1, (lambda-G[0])/G[1]);
 }
 
-void Cell::calcArea()
+void Cell::calcA()
 {
 	this->calcCentroid();
 	double x_0 = centroid.x(); double y_0 = centroid.y();
@@ -114,10 +109,15 @@ void Cell::calcArea()
 	dA = A - A_old;
 }
 
-void Cell::calcT()
+void Cell::calcL()
 {
-	T = k*(A-A_0);
+	L = 0;
+	for (int e : edge_keys) { //make sure edge_lengths are already calculated
+		L += edge_map.at(e).getl();
+	}
 }
+
+void Cell::calcT_A() { T_A = k_A*(A-A_0); }
 
 
 

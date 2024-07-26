@@ -20,7 +20,8 @@ private:
 
     Point centroid;
     double A; double dA;
-    double T; //surface tension
+    double L; //cell perimeter
+    double T_A; //surface tension
     
     double G[3]; //gyration tensor symmetric so only need 3 values (a b, b c)
     double lambda; //gyration tensor largest eigenvalue
@@ -32,9 +33,10 @@ public:
      
     const int getID() const;
     const Point& getCentroid() const;
-    double getA() const;
-    double getdA() const;
-    double getT() const;
+    const double getA() const;
+    const double getdA() const;
+    const double getL() const;
+    const double getT_A() const;
     const std::unordered_set<int>& getVertices() const;
     const std::unordered_set<int>& getEdges() const;
    
@@ -48,8 +50,9 @@ public:
     
     void calcCentroid();
     void calcG();
-    void calcArea();
-    void calcT();
+    void calcA();
+    void calcL();
+    void calcT_A();
 
 };
 
