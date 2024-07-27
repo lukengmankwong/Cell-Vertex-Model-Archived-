@@ -56,7 +56,7 @@ void getInitialData(VD& vd, bool (*in)(const Point&))
         cell_counter++;
     }
 
-	std::set<int> cells_to_remove;
+	std::unordered_set<int> cells_to_remove;
 	for (const auto& cell : cell_map) {
         if (cell.second.getVertices().size() <= 2) { cells_to_remove.insert(cell.first); }
     }
@@ -91,9 +91,7 @@ void runSimulation(int time_steps)
 
 		for (auto& vertex : vertex_map) { vertex.second.calcForce(Point(0,0)); }
 		
-		for (auto& cell : cell_map) {
-			std::cout << "Cell (" << cell.first << ") L=" << cell.second.getL() << "\tA=" << cell.second.getA() << '\n';
-		}
+		//for (auto& cell : cell_map) { std::cout << "Cell (" << cell.first << ") L=" << cell.second.getL() << "\tA=" << cell.second.getA() << '\n'; }
 		
         for (auto& vertex : vertex_map) { vertex.second.applyForce(); }
         
@@ -118,17 +116,26 @@ void outputData(const std::unordered_map<int, Vertex>& vertex_map, const std::un
 
 void WriteVTKFile(const std::unordered_map<int, Vertex>& vertex_map, const std::unordered_map<int, Edge>& edge_map, const std::unordered_map<int, Cell>& cell_map, const std::string& filename) {
 
-    // Create a mapping from the original vertex IDs to zero-based indices
     std::unordered_map<int, int> index_map;
     int index = 0;
     for (const auto& vertex : vertex_map) { index_map[vertex.first] = index++; }
 
     std::ofstream vtkFile(filename);
-    vtkFile << "# vtk DataFile Version 3.0\nGraph\nASCII\nDATASET POLYDATA\nPOINTS " << vertex_map.size() << " float\n";
+    vtkFile << "# vtk DataFile Version 3.0\nGraph\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << vertex_map.size() << " float\n";
     for (const auto& vertex : vertex_map) { vtkFile << vertex.second.getR().x() << " " << vertex.second.getR().y() << " " << "0\n"; }
-
-    vtkFile << "LINES " << edge_map.size() << " " << edge_map.size() * 3 << '\n';
-    for (const auto& edge : edge_map) { vtkFile << "2 " << index_map[edge.second.getE().first] << " " << index_map[edge.second.getE().second] << '\n'; }   
+    
+    int n = 0; for (const auto& cell : cell_map) { n += cell.second.getVertices().size(); }
+    n += cell_map.size();
+    vtkFile << "CELLS " << cell_map.size() << " " << n << '\n';
+    for (const auto& cell : cell_map) {
+		vtkFile << cell.second.getVertices().size() << " ";
+		for (int v : cell.second.getVertices()) { vtkFile << index_map[v] << " "; }
+		vtkFile << '\n';
+	}
 	
+	vtkFile << "CELL_TYPES " << cell_map.size() << '\n';
+	for (int c = 0; c < cell_map.size(); c++) { vtkFile << "7\n"; }
+	   
     vtkFile.close();
 }
+
