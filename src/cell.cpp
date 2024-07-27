@@ -3,7 +3,8 @@
 
 Cell::Cell(int id, std::vector<int>& vertex_keys, std::vector<int>& edge_keys) : id(id)
 {
-	this->vertex_keys = std::unordered_set<int>(vertex_keys.begin(), vertex_keys.end());
+	this->vertex_keys = vertex_keys;
+	//this->vertex_keys = std::unordered_set<int>(vertex_keys.begin(), vertex_keys.end());
 	this->edge_keys = std::unordered_set<int>(edge_keys.begin(), edge_keys.end());
 	A = A_0;
 }
@@ -14,7 +15,7 @@ const double Cell::getA() const { return A; }
 const double Cell::getdA() const { return dA; }
 const double Cell::getL() const { return L; }
 const double Cell::getT_A() const { return T_A; }
-const std::unordered_set<int>& Cell::getVertices() const { return vertex_keys; }
+const std::vector<int>& Cell::getVertices() const { return vertex_keys; }
 const std::unordered_set<int>& Cell::getEdges() const { return edge_keys; }
 
 

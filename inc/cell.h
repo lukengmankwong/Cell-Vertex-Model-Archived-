@@ -15,7 +15,7 @@ private:
 
 	const int id;
 	
-    std::unordered_set<int> vertex_keys;
+    std::vector<int> vertex_keys;
     std::unordered_set<int> edge_keys;
 
     Point centroid;
@@ -37,7 +37,7 @@ public:
     const double getdA() const;
     const double getL() const;
     const double getT_A() const;
-    const std::unordered_set<int>& getVertices() const;
+    const std::vector<int>& getVertices() const;
     const std::unordered_set<int>& getEdges() const;
    
 	bool removeEdge(int edge_id);
