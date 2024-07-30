@@ -4,7 +4,6 @@
 Edge::Edge(int id, int v1, int v2) : id(id)
 {
     (v1 < v2) ? e = std::make_pair(v1, v2) : e = std::make_pair(v2, v1);
-    l = 0.001;
 }
 
 bool Edge::operator==(const Edge& other) const { return ((e.first == other.e.first) && (e.second == other.e.second)); }
@@ -13,7 +12,6 @@ const int Edge::getID() const { return id; }
 const std::pair<int, int>& Edge::getE() const { return e; }
 const std::unordered_set<int>& Edge::getCellJunctions() const { return cell_junctions; }
 const double Edge::getl() const { return l; }
-const double Edge::getdl() const { return dl; }
 const double Edge::getT_l() const { return T_l; }
 
 
@@ -45,9 +43,7 @@ bool Edge::swapVertex(int v_old, int v_new)
 
 void Edge::calcLength()
 {
-	double l_old = l;
 	l = std::sqrt( (vertex_map.at(e.first).getR()-vertex_map.at(e.second).getR()).squared_length() );
-	dl = l-l_old;
 }
 
 void Edge::calcT_l()

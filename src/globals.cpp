@@ -8,13 +8,13 @@ std::unordered_map<int, Cell> cell_map; int cell_counter = 0;
 //parameters
 const int cell_count = 1000;
 
-const double dt = 1e-10;
-const int timesteps = 1;
+const double dt = 1e-7;
+const int timesteps = 1000;
 
-const double A_0 = 0.001;
+const double A_0 = 1/cell_count;
 
-const double k_A = 0.01;
-const double k_L = 0.5;
-const double T_l_0 = 0.05;
+const double k_A = 1;
+const double k_L = 1;
+const double T_l_0 = 0.25;
 
 const double a = 1;

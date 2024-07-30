@@ -17,6 +17,9 @@ private:
     
     std::unordered_set<int> cell_contacts;
     std::unordered_set<int> edge_contacts;
+    
+    Vec calcSurfaceForce();
+    Vec calcLineForce();
 
 public:
     Vertex(int id, Point r);
@@ -35,7 +38,9 @@ public:
     bool inEdge(int edge_index) const;
 
     void calcForce(Point centroid);
+    void addNoise();
     void applyForce();
+
 
 };
 

@@ -76,28 +76,23 @@ void runSimulation(int time_steps)
 
     for (int step = 0; step < time_steps; step++)
     { 
-		WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(step) + ".vtk");
-		
+		WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(step) + ".vtk", "directors" + std::to_string(step) + ".vtk");
+
 		for (auto& edge : edge_map) { edge.second.calcLength(); }
-		
-		for (auto& cell : cell_map) { 
+		for (auto& cell : cell_map) 
+		{ 
 			cell.second.calcL();
 			cell.second.calcA(); 
 			cell.second.calcT_A();
 			cell.second.calcG();
-		} 
-		
+		} 	
 		for (auto& edge : edge_map) { edge.second.calcT_l(); }
 
-		for (auto& vertex : vertex_map) { vertex.second.calcForce(Point(0,0)); }
-		
-		//for (auto& cell : cell_map) { std::cout << "Cell (" << cell.first << ") L=" << cell.second.getL() << "\tA=" << cell.second.getA() << '\n'; }
-		
+		for (auto& vertex : vertex_map) { vertex.second.calcForce(Point(0,0)); }		
         for (auto& vertex : vertex_map) { vertex.second.applyForce(); }
-        
-		
+        		
     }
-    WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(timesteps) + ".vtk");
+    WriteVTKFile(vertex_map, edge_map, cell_map, "graph" + std::to_string(timesteps) + ".vtk", "directors" + std::to_string(timesteps) + ".vtk");
 }
 
 
@@ -114,28 +109,43 @@ void outputData(const std::unordered_map<int, Vertex>& vertex_map, const std::un
 }
 
 
-void WriteVTKFile(const std::unordered_map<int, Vertex>& vertex_map, const std::unordered_map<int, Edge>& edge_map, const std::unordered_map<int, Cell>& cell_map, const std::string& filename) {
+void WriteVTKFile(const std::unordered_map<int, Vertex>& vertex_map, const std::unordered_map<int, Edge>& edge_map, const std::unordered_map<int, Cell>& cell_map, const std::string& filename_graph, const std::string& filename_director) {
 
     std::unordered_map<int, int> index_map;
     int index = 0;
     for (const auto& vertex : vertex_map) { index_map[vertex.first] = index++; }
 
-    std::ofstream vtkFile(filename);
-    vtkFile << "# vtk DataFile Version 3.0\nGraph\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << vertex_map.size() << " float\n";
-    for (const auto& vertex : vertex_map) { vtkFile << vertex.second.getR().x() << " " << vertex.second.getR().y() << " " << "0\n"; }
+    std::ofstream graphFile(filename_graph);
+    graphFile << "# vtk DataFile Version 2.0\nGraph\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << vertex_map.size() << " float\n";
+    for (const auto& vertex : vertex_map) { graphFile << vertex.second.getR().x() << " " << vertex.second.getR().y() << " 0\n"; }
     
     int n = 0; for (const auto& cell : cell_map) { n += cell.second.getVertices().size(); }
     n += cell_map.size();
-    vtkFile << "CELLS " << cell_map.size() << " " << n << '\n';
+    graphFile << "CELLS " << cell_map.size() << " " << n << '\n';
     for (const auto& cell : cell_map) {
-		vtkFile << cell.second.getVertices().size() << " ";
-		for (int v : cell.second.getVertices()) { vtkFile << index_map[v] << " "; }
-		vtkFile << '\n';
+		graphFile << cell.second.getVertices().size() << " ";
+		for (int v : cell.second.getVertices()) { graphFile << index_map[v] << " "; }
+		graphFile << '\n';
 	}
 	
-	vtkFile << "CELL_TYPES " << cell_map.size() << '\n';
-	for (int c = 0; c < cell_map.size(); c++) { vtkFile << "7\n"; }
+	graphFile << "CELL_TYPES " << cell_map.size() << '\n';
+	for (int c = 0; c < cell_map.size(); c++) { graphFile << "7\n"; }
 	   
-    vtkFile.close();
+    graphFile.close();
+    
+    std::ofstream directorFile(filename_director);
+    directorFile << "# vtk DataFile Version 2.0\nDirectors\nASCII\nDATASET POLYDATA\nPOINTS " << 2*cell_map.size() << " float\n";
+    for (const auto& cell : cell_map) { 
+		directorFile << (cell.second.getCentroid()-cell.second.getDirector()).x() << " " << (cell.second.getCentroid()-cell.second.getDirector()).y() << " 0\n";
+		directorFile << (cell.second.getCentroid()+cell.second.getDirector()).x() << " " << (cell.second.getCentroid()+cell.second.getDirector()).y() << " 0\n";
+	}
+	
+	directorFile << "LINES " << cell_map.size() << " " << 3*cell_map.size() << "\n";
+	for (int i = 0; i < cell_map.size(); i++) {
+		directorFile << "2 " << 2*i << " " << 2*i+1 << "\n";
+	}
+	
+	directorFile.close();
+    
 }
 

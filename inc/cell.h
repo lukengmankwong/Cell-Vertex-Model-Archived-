@@ -33,10 +33,13 @@ public:
      
     const int getID() const;
     const Point& getCentroid() const;
+    const Vec& getDirector() const;
+    
     const double getA() const;
     const double getdA() const;
     const double getL() const;
     const double getT_A() const;
+    
     const std::vector<int>& getVertices() const;
     const std::unordered_set<int>& getEdges() const;
    
