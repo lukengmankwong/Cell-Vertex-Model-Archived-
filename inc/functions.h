@@ -8,18 +8,18 @@
 #include <fstream>
 
 #include "libraries.h"
-#include "globals.h"
+#include "global.h"
 
 #include "vertex.h"
 #include "edge.h"
 #include "cell.h"
 
-void getInitialData(VD& vd, bool (*in)(const Point&));
+void getInitialData(VD& vd, Global& global, bool (*in)(const Point&));
 
-void runSimulation(int time_steps);
+void runSimulation(Global& global, int time_steps);
 
-void outputData(const std::unordered_map<int, Vertex>& vertex_map, const std::unordered_map<int, Edge>& edge_map, const std::unordered_map<int, Cell>& cell_map);
+void outputData(Global& global);
 
-void WriteVTKFile(const std::unordered_map<int, Vertex>& vertex_map, const std::unordered_map<int, Edge>& edge_map, const std::unordered_map<int, Cell>& cell_map, const std::string& filename_graph, const std::string& filename_director);
+void WriteVTKFile(Global& global, const std::string& filename_graph, const std::string& filename_director);
 
 #endif // FUNCTIONS_H

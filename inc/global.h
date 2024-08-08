@@ -19,11 +19,6 @@ class Vertex;
 class Edge;
 class Cell;
 
-extern std::unordered_map<int, Vertex> vertex_map; extern int vertex_counter;
-extern std::unordered_map<int, Edge> edge_map; extern int edge_counter;
-extern std::unordered_map<int, Cell> cell_map; extern int cell_counter;
-
-
 //parameters
 extern const int cell_count;
 
@@ -59,11 +54,20 @@ public:
         return instance;
     }
     
+    std::unordered_map<int, Vertex>& vertexMap();
+    std::unordered_map<int, Edge>& edgeMap();
+    std::unordered_map<int, Cell>& cellMap();
+    
     const int vertexCounter() const; 
+    const int edgeCounter() const;
+    const int cellCounter() const;
 
 	void createVertex(Point r);
-	void createEdge(int v1, int v2);
-	void createCell(std::vector<int>& vertex_keys, std::vector<int>& edge_keys);
+	const int createEdge(int v1, int v2);
+	const int createCell(std::vector<int>& vertex_keys, std::vector<int>& edge_keys);
+	
+	void cellNewVertex(int c, int v, int i); //add new vertex to cell vertex_keys at index i
+	void cellNewEdge(int c, int e, int i=-1); //add new edge to cell edge_keys at index i
 	
 	void destroyVertex(int v);
 	void destroyEdge(int e);

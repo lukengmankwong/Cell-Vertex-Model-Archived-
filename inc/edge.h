@@ -4,12 +4,14 @@
 #include <cmath>
 #include <utility>
 
-#include "globals.h"
-
+#include "global.h"
+class Global;
 
 class Edge
 {
 private:
+	
+	Global* g;
     const int id;
     std::pair<int, int> e;
     double l; //length
@@ -18,7 +20,7 @@ private:
     std::unordered_set<int> cell_junctions;
   
 public:
-    Edge(int id, int v1, int v2);
+    Edge(Global* g, int id, int v1, int v2);
     bool operator==(const Edge& other) const;
     
     const int getID() const;

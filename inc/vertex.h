@@ -4,13 +4,14 @@
 #include <utility>
 #include <unordered_set>
 
-#include "globals.h"
-
+#include "global.h"
+class Global;
 
 class Vertex
 {
 private:
 
+	Global* g;
     const int id;
     Point r; Vec dr;
     Vec force;
@@ -22,7 +23,7 @@ private:
     Vec calcLineForce();
 
 public:
-    Vertex(int id, Point r);
+    Vertex(Global* g, int id, Point r);
     bool operator==(const Vertex& other) const;
     
     const Point& getR() const;
@@ -34,14 +35,13 @@ public:
   
     void addEdgeContact(int edge_id);
     void removeEdgeContact(int edge_id);
- 
-    bool inEdge(int edge_index) const;
 
-    void calcForce(Point centroid);
+    void calcForce();
     void addNoise();
     void applyForce();
 
-
+	void destroy();
+	
 };
 
 #endif // VERTEX_H

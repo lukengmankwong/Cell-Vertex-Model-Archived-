@@ -1,7 +1,7 @@
 #ifndef LIBRARIES_H
 #define LIBRARIES_H
 
-#include "globals.h"
+#include "global.h"
 
 #include <CGAL/Delaunay_triangulation_2.h>
 #include <CGAL/Delaunay_triangulation_adaptation_traits_2.h>
