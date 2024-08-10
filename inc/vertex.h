@@ -23,12 +23,13 @@ private:
     Vec calcLineForce();
 
 public:
-    Vertex(Global* g, int id, Point r);
+    Vertex(Global* g, Point r);
     bool operator==(const Vertex& other) const;
     
-    const Point& getR() const;
-    const int getID() const;
-    const std::unordered_set<int>& getCellContacts() const;
+    const Point& R() const;
+    const int ID() const;
+    const std::unordered_set<int>& cellContacts() const;
+    const std::unordered_set<int>& edgeContacts() const;
 
     void addCellContact(int cell_id);
     void removeCellContact(int cell_id);

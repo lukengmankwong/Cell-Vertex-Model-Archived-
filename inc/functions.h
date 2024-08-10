@@ -15,11 +15,8 @@
 #include "cell.h"
 
 void getInitialData(VD& vd, Global& global, bool (*in)(const Point&));
-
 void runSimulation(Global& global, int time_steps);
-
 void outputData(Global& global);
-
 void WriteVTKFile(Global& global, const std::string& filename_graph, const std::string& filename_director);
 
 #endif // FUNCTIONS_H

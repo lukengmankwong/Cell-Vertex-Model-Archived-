@@ -4,6 +4,7 @@
 #include <utility>
 #include <unordered_map>
 
+#include <CGAL/Kernel/global_functions.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Point_2.h>
 #include <CGAL/Vector_2.h>
@@ -18,6 +19,10 @@ typedef CGAL::Point_2<K>												  Point;
 class Vertex;
 class Edge;
 class Cell;
+
+//constants
+
+extern const double pi;
 
 //parameters
 extern const int cell_count;
@@ -62,7 +67,7 @@ public:
     const int edgeCounter() const;
     const int cellCounter() const;
 
-	void createVertex(Point r);
+	const int createVertex(Point r);
 	const int createEdge(int v1, int v2);
 	const int createCell(std::vector<int>& vertex_keys, std::vector<int>& edge_keys);
 	
@@ -72,6 +77,10 @@ public:
 	void destroyVertex(int v);
 	void destroyEdge(int e);
 	void destroyCell(int c);
+	
+	const bool commonEdge(int c1, int c2) const;
+	
+	void extrusion();
 	
 };
 

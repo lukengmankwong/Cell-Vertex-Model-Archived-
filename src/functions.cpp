@@ -1,5 +1,20 @@
 #include "functions.h"
 
+void removeDuplicates(std::vector<int>& vec) {
+    std::unordered_set<int> seen;   // To track seen elements
+    auto it = vec.begin();
+
+    while (it != vec.end()) {
+        // If the element is seen for the first time, keep it
+        if (seen.insert(*it).second) {
+            ++it;
+        } else {
+            // Otherwise, erase the duplicate
+            it = vec.erase(it);
+        }
+    }
+}
+
 
 void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 {
@@ -20,7 +35,7 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 			{
 				for (const auto& vertex : global.vertexMap())
 				{
-					if (ec->source()->point() == vertex.second.getR())
+					if (ec->source()->point() == vertex.second.R())
 					{
 						cell_vertex_indices.push_back(vertex.first);
 						break;
@@ -31,7 +46,7 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
         } while (ec != ec_start);
 		
         std::vector<int> cell_edge_indices; 
-        if (cell_vertex_indices.size() >= 3)
+        if (true)
         {
 			for (int i = 0; i < cell_vertex_indices.size(); i++)
 			{
@@ -52,16 +67,22 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 				}		
 			}
 		}
+		//for (int v : cell_edge_indices) { std::cout << v << '\n'; } std::cout << '\n';
+		removeDuplicates(cell_edge_indices); //temporary fix
         global.createCell(cell_vertex_indices, cell_edge_indices);
     } 
     
 	std::unordered_set<int> cells_to_remove;
 	for (const auto& vertex : global.vertexMap())  
 	{ 
-		if ( !in(vertex.second.getR()) ) 
+		if ( !in(vertex.second.R()) ) 
 		{ 
-			cells_to_remove.insert(vertex.second.getCellContacts().begin(), vertex.second.getCellContacts().end()); 
+			cells_to_remove.insert(vertex.second.cellContacts().begin(), vertex.second.cellContacts().end()); 
 		}
+	}
+	for (const auto& cell : global.cellMap())
+	{
+		if (cell.second.getEdges().size() < 3) { cells_to_remove.insert(cell.first); }
 	}
 	for (int c : cells_to_remove) { global.destroyCell(c); }
 	int V = global.vertexMap().size(); int E = global.edgeMap().size(); int C = global.cellMap().size();
@@ -73,25 +94,35 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 
 void runSimulation(Global& global, int time_steps)
 {
-	for (auto& cell : global.cellMap()) { cell.second.calcm(); }
+
     for (int step = 0; step < time_steps; step++)
     { 
+		//std::cout << "step " << step << ":\n";
+		WriteVTKFile(global, "graph" + std::to_string(step) + ".vtk", "directors" + std::to_string(step) + ".vtk");
+		/*std::cout << "cell map size: " << global.cellMap().size() << "\n";
+		std::cout << "edge map size: " << global.edgeMap().size() << "\n";
+		std::cout << "vertex map size: " << global.vertexMap().size() << "\n";*/
+		for (auto& cell : global.cellMap()) { cell.second.calcm(); }
+
 		for (auto& edge : global.edgeMap()) { edge.second.calcLength(); }
+
 		for (auto& cell : global.cellMap()) 
 		{ 
 			cell.second.calcL();
 			cell.second.calcA(); 
 			cell.second.calcT_A();
 			cell.second.calcG();
-		} 
-		WriteVTKFile(global, "graph" + std::to_string(step) + ".vtk", "directors" + std::to_string(step) + ".vtk");
-		
+		}
+
+			
 		for (auto& edge : global.edgeMap()) { edge.second.calcT_l(); }
 		for (auto& vertex : global.vertexMap()) { vertex.second.calcForce(); }		
         for (auto& vertex : global.vertexMap()) { vertex.second.applyForce(); }
+        
+		global.extrusion();
         	
     }
-    WriteVTKFile(global, "graph" + std::to_string(timesteps) + ".vtk", "directors" + std::to_string(timesteps) + ".vtk");
+    WriteVTKFile(global, "graph" + std::to_string(time_steps) + ".vtk", "directors" + std::to_string(time_steps) + ".vtk");
 }
 
 
@@ -101,7 +132,7 @@ void outputData(Global& global)
     for (auto& cell : global.cellMap()) 
     {
         std::cout << "Cell (" << cell.first << ") : ";
-        for (int vertex_id : cell.second.getVertices()) { std::cout << global.vertexMap().at(vertex_id).getR() << ", "; }
+        for (int vertex_id : cell.second.getVertices()) { std::cout << global.vertexMap().at(vertex_id).R() << ", "; }
         std::cout << '\n';
         for (int edge_id : cell.second.getEdges()) { std::cout << global.edgeMap().at(edge_id).getE().first << ' ' << global.edgeMap().at(edge_id).getE().second << '\n'; }
         std::cout << '\n';
@@ -118,7 +149,7 @@ void WriteVTKFile(Global& global, const std::string& filename_graph, const std::
 
     std::ofstream graphFile(filename_graph);
     graphFile << "# vtk DataFile Version 2.0\nGraph\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << global.vertexMap().size() << " float\n";
-    for (const auto& vertex : global.vertexMap()) { graphFile << vertex.second.getR().x() << " " << vertex.second.getR().y() << " 0\n"; }
+    for (const auto& vertex : global.vertexMap()) { graphFile << vertex.second.R().x() << " " << vertex.second.R().y() << " 0\n"; }
     
     int n = 0; for (const auto& cell : global.cellMap()) { n += cell.second.getVertices().size(); }
     n += global.cellMap().size();

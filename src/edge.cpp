@@ -1,14 +1,15 @@
 #include "edge.h"
 
 
-Edge::Edge(Global* g, int id, int v1, int v2) : g(g), id(id)
+Edge::Edge(Global* g, int v1, int v2) : g(g), id(g->edgeCounter())
 {
-    (v1 < v2) ? e = std::make_pair(v1, v2) : e = std::make_pair(v2, v1);
+	e = std::make_pair(v1, v2);
+    //(v1 < v2) ? e = std::make_pair(v1, v2) : e = std::make_pair(v2, v1);
 }
 
 bool Edge::operator==(const Edge& other) const { return ((e.first == other.e.first) && (e.second == other.e.second)); }
 
-const int Edge::getID() const { return id; }
+const int Edge::ID() const { return id; }
 const std::pair<int, int>& Edge::getE() const { return e; }
 const std::unordered_set<int>& Edge::getCellJunctions() const { return cell_junctions; }
 const double Edge::getl() const { return l; }
@@ -32,17 +33,21 @@ bool Edge::swapVertex(int v_old, int v_new)
 {
 	if (v_old == e.first) {
 		e.first = v_new;
+		for (int c : cell_junctions) { g->cellMap().at(c).removeVertex(v_old); }
+		g->vertexMap().erase(v_old);
 		return true;
 	}
 	else if (v_old == e.second) {
 		e.second = v_new;
+		for (int c : cell_junctions) { g->cellMap().at(c).removeVertex(v_old); }
+		g->vertexMap().erase(v_old);
 		return true;
 	}
 	else { return false;}
 }
 
 
-void Edge::calcLength() { l = std::sqrt((g->vertexMap().at(e.first).getR()-g->vertexMap().at(e.second).getR()).squared_length()); }
+void Edge::calcLength() { l = std::sqrt((g->vertexMap().at(e.first).R()-g->vertexMap().at(e.second).R()).squared_length()); }
 
 void Edge::calcT_l()
 {

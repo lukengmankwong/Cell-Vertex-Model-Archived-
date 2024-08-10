@@ -20,10 +20,10 @@ private:
     std::unordered_set<int> cell_junctions;
   
 public:
-    Edge(Global* g, int id, int v1, int v2);
+    Edge(Global* g, int v1, int v2);
     bool operator==(const Edge& other) const;
     
-    const int getID() const;
+    const int ID() const;
     const std::pair<int, int>& getE() const;
     const std::unordered_set<int>& getCellJunctions() const;
     const double getl() const;

@@ -35,23 +35,23 @@ private:
     const int longestEdge() const;
     
 public:
-    Cell(Global* g, int id, std::vector<int>& vertex_keys, std::vector<int>& edge_keys);
+    Cell(Global* g, std::vector<int>& vertex_keys, std::vector<int>& edge_keys);
      
-    const int getID() const;
-    const Point& getCentroid() const;
-    const Vec& getDirector() const;
+    const int ID() const;
+    const std::vector<int>& getVertices() const;
+    const std::vector<int>& getEdges() const;
     
     const double getA() const;
     const double getS() const;
     const double getL() const;
     const double getT_A() const;
-    
-    const std::vector<int>& getVertices() const;
-    const std::vector<int>& getEdges() const;
-    
+    const Point& getCentroid() const;
+    const Vec& getDirector() const;
     
     void addVertex(int v, int i);
+    void removeVertex(int v);
     void addEdge(int e, int i);
+    void removeEdge(int e);
  
     void removeEdges();
     void removeVertices();

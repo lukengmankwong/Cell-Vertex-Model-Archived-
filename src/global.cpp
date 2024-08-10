@@ -1,18 +1,22 @@
 #include "global.h"
 
+//constants
+
+const double pi = 3.14159265358979323846264338;
+
 //parameters
-const int cell_count = 1000;
+const int cell_count = 2500;
 
 const double dt = 1e-6;
-const int timesteps = 400;
+const int timesteps = 750;
 
 const double A_0 = 1.0/cell_count;
 
-const double k_A = 1;
-const double k_L = 1;
-const double T_l_0 = 1;
+const double k_A = 10;
+const double k_L = 2;
+const double T_l_0 = 0;
 
-const double a = 1;
+const double a = 3;
 
 
 //Global class
@@ -28,14 +32,15 @@ const int Global::edgeCounter() const { return edge_counter; }
 const int Global::cellCounter() const { return cell_counter; }
 
 
-void Global::createVertex(Point r)
+const int Global::createVertex(Point r)
 {
-	vertex_map.emplace(vertex_counter, Vertex(this, vertex_counter, r));
+	vertex_map.emplace(vertex_counter, Vertex(this, r));
 	vertex_counter++;
+	return vertex_counter-1;
 }
 const int Global::createEdge(int v1, int v2)
 {
-	edge_map.emplace(edge_counter, Edge(this, edge_counter, v1, v2));
+	edge_map.emplace(edge_counter, Edge(this, v1, v2));
 	vertex_map.at(v1).addEdgeContact(edge_counter); //vertex v1 knows it's part of edge
 	vertex_map.at(v2).addEdgeContact(edge_counter); //vertex v2 knows it's part of edge
 	edge_counter++;
@@ -43,7 +48,7 @@ const int Global::createEdge(int v1, int v2)
 }
 const int Global::createCell(std::vector<int>& vertex_keys, std::vector<int>& edge_keys)
 {
-	cell_map.emplace(cell_counter, Cell(this, cell_counter, vertex_keys, edge_keys));
+	cell_map.emplace(cell_counter, Cell(this, vertex_keys, edge_keys));
 	for (int v : vertex_keys) { vertex_map.at(v).addCellContact(cell_counter); } //vertices know they are part of cell
 	for (int e : edge_keys) { edge_map.at(e).addCellJunction(cell_counter); } //edges know they are part of cell
 	cell_counter++;
@@ -77,5 +82,31 @@ void Global::destroyCell(int c)
 	for (int v : cell_map.at(c).getVertices()) { vertex_map.at(v).removeCellContact(c); }
 	for (int e : cell_map.at(c).getEdges()) { edge_map.at(e).removeCellJunction(c); }
 	cell_map.erase(c);
+}
+
+const bool Global::commonEdge(int c1, int c2) const
+{
+	for (int e : cell_map.at(c1).getEdges())
+	{
+		auto it = std::find(cell_map.at(c2).getEdges().begin(), cell_map.at(c2).getEdges().end(), e);
+		if (it != cell_map.at(c2).getEdges().end()) { return true; }
+	}
+	return false;
+}
+
+void Global::extrusion()
+{
+	std::vector<int> small_cells;
+	for (auto cell : cell_map)
+	{
+		if (cell.second.getA() < 0.25*A_0)
+		{
+			small_cells.push_back(cell.first);
+		}
+	}
+	for (int c : small_cells)
+	{
+		cell_map.at(c).extrude();
+	}
 }
 
