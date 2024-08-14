@@ -18,8 +18,10 @@ private:
 
 	Global* g;
 	const int id;
-    std::vector<int> vertex_keys;
-    std::vector<int> edge_keys;
+    std::vector<int> vertices;
+    std::vector<int> edges;
+    std::vector<int> nearest_neighbours;
+    std::vector<bool> edge_directions;
 
     Point centroid;
     double A; double S; //cell area, area sign (+1 or -1)
@@ -29,17 +31,17 @@ private:
     double G[3]; //gyration tensor symmetric so only need 3 values (a b, b c)
     double TL[3]; //traceless matrix of gyration tensor
     double lambda; //gyration tensor largest eigenvalue
-    Vec director;
+    Vec director; //normalised
     double m; //winding number around cell nearest neighbors
     
-    const int longestEdge() const;
+    const int longestEdge_i() const;
+    std::vector<int> nearestNeighbours();
     
 public:
-    Cell(Global* g, std::vector<int>& vertex_keys, std::vector<int>& edge_keys);
-     
-    const int ID() const;
-    const std::vector<int>& getVertices() const;
-    const std::vector<int>& getEdges() const;
+    Cell(Global* g, std::vector<int>& vertices, std::vector<std::pair<int,int>>& edges);
+    
+    const std::vector<int>& Vertices() const;
+    const std::vector<int>& Edges() const;
     
     const double getA() const;
     const double getS() const;
@@ -47,6 +49,9 @@ public:
     const double getT_A() const;
     const Point& getCentroid() const;
     const Vec& getDirector() const;
+    const double getm() const;
+    
+    const bool hasEdge(int e) const;
     
     void addVertex(int v, int i);
     void removeVertex(int v);

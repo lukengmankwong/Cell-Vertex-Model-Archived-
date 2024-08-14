@@ -1,12 +1,12 @@
 #include "functions.h"
 
-void removeDuplicates(std::vector<int>& vec) {
+void removeDuplicates(std::vector<std::pair<int, int>>& vec) {
     std::unordered_set<int> seen;   // To track seen elements
     auto it = vec.begin();
 
     while (it != vec.end()) {
         // If the element is seen for the first time, keep it
-        if (seen.insert(*it).second) {
+        if (seen.insert(it->first).second) {
             ++it;
         } else {
             // Otherwise, erase the duplicate
@@ -26,7 +26,7 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
     
     for (VD::Face_iterator fi = vd.faces_begin(); fi != vd.faces_end(); fi++) 
     {
-        std::vector<int> cell_vertex_indices;
+        std::vector<int> cell_vertices;
         VD::Ccb_halfedge_circulator ec_start = fi->ccb();
         VD::Ccb_halfedge_circulator ec = ec_start;
 
@@ -37,7 +37,7 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 				{
 					if (ec->source()->point() == vertex.second.R())
 					{
-						cell_vertex_indices.push_back(vertex.first);
+						cell_vertices.push_back(vertex.first);
 						break;
 					}
 				}
@@ -45,32 +45,42 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 			++ec;
         } while (ec != ec_start);
 		
-        std::vector<int> cell_edge_indices; 
+        std::vector<std::pair<int, int>> cell_edges; 
         if (true)
         {
-			for (int i = 0; i < cell_vertex_indices.size(); i++)
+			for (int i = 0; i < cell_vertices.size(); i++)
 			{
-				int v1 = cell_vertex_indices[i]; int v2 = cell_vertex_indices[(i+1)%cell_vertex_indices.size()];
+				int v1 = cell_vertices[i]; int v2 = cell_vertices[(i+1)%cell_vertices.size()];
 				bool found = false;
 				for (const auto& edge : global.edgeMap())
 				{
-					if ( (edge.second.getE().first == v1 && edge.second.getE().second == v2) || (edge.second.getE().first == v2 && edge.second.getE().second == v1) )
+					if (edge.second.E().first == v1 && edge.second.E().second == v2)
 					{
-						cell_edge_indices.push_back(edge.first);
+						cell_edges.push_back(std::make_pair(edge.first, 0));
+						found = true;
+						break;
+					}
+					else if (edge.second.E().first == v2 && edge.second.E().second == v1)
+					{
+						cell_edges.push_back(std::make_pair(edge.first, 1));
 						found = true;
 						break;
 					}
 				}
 				if (!found)
 				{
-					cell_edge_indices.push_back(global.createEdge(v1, v2));
+					cell_edges.push_back(std::make_pair(global.createEdge(v1, v2), 0));
 				}		
 			}
 		}
-		//for (int v : cell_edge_indices) { std::cout << v << '\n'; } std::cout << '\n';
-		removeDuplicates(cell_edge_indices); //temporary fix
-        global.createCell(cell_vertex_indices, cell_edge_indices);
+		//for (int v : cell_edges) { std::cout << v << '\n'; } std::cout << '\n';
+		removeDuplicates(cell_edges); //temporary fix
+        global.createCell(cell_vertices, cell_edges);
+        //for (int v : cell_vertices) { std::cout << v << ' '; } std::cout << '\n';
+		//for (auto e : cell_edges) { std::cout << global.edge(e.first).E().first << ' ' << global.edge(e.first).E().second << '\t'; } std::cout << "\n\n";
     } 
+    
+    
     
 	std::unordered_set<int> cells_to_remove;
 	for (const auto& vertex : global.vertexMap())  
@@ -82,7 +92,7 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 	}
 	for (const auto& cell : global.cellMap())
 	{
-		if (cell.second.getEdges().size() < 3) { cells_to_remove.insert(cell.first); }
+		if (cell.second.Edges().size() < 3) { cells_to_remove.insert(cell.first); }
 	}
 	for (int c : cells_to_remove) { global.destroyCell(c); }
 	int V = global.vertexMap().size(); int E = global.edgeMap().size(); int C = global.cellMap().size();
@@ -94,16 +104,16 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 
 void runSimulation(Global& global, int time_steps)
 {
-
     for (int step = 0; step < time_steps; step++)
     { 
+		//for (auto& vertex : global.vertexMap()) { if (vertex.second.edgeContacts().size() == 4) vertex.second.T1(); }
 		//std::cout << "step " << step << ":\n";
-		WriteVTKFile(global, "graph" + std::to_string(step) + ".vtk", "directors" + std::to_string(step) + ".vtk");
+				
+
 		/*std::cout << "cell map size: " << global.cellMap().size() << "\n";
 		std::cout << "edge map size: " << global.edgeMap().size() << "\n";
 		std::cout << "vertex map size: " << global.vertexMap().size() << "\n";*/
 		for (auto& cell : global.cellMap()) { cell.second.calcm(); }
-
 		for (auto& edge : global.edgeMap()) { edge.second.calcLength(); }
 
 		for (auto& cell : global.cellMap()) 
@@ -113,16 +123,20 @@ void runSimulation(Global& global, int time_steps)
 			cell.second.calcT_A();
 			cell.second.calcG();
 		}
-
+		global.addDefects();
+		WriteVTKFile(global, "graph" + std::to_string(step) + ".vtk", "defects" + std::to_string(step) + ".vtk", "directors" + std::to_string(step) + ".vtk");
+		
+		//global.extrusion();
+		global.division();
 			
 		for (auto& edge : global.edgeMap()) { edge.second.calcT_l(); }
 		for (auto& vertex : global.vertexMap()) { vertex.second.calcForce(); }		
         for (auto& vertex : global.vertexMap()) { vertex.second.applyForce(); }
         
-		global.extrusion();
+		global.nextStep();
         	
     }
-    WriteVTKFile(global, "graph" + std::to_string(time_steps) + ".vtk", "directors" + std::to_string(time_steps) + ".vtk");
+    //WriteVTKFile(global, "graph" + std::to_string(time_steps) + ".vtk", "defects" + std::to_string(time_steps) + ".vtk", "directors" + std::to_string(time_steps) + ".vtk");
 }
 
 
@@ -132,17 +146,18 @@ void outputData(Global& global)
     for (auto& cell : global.cellMap()) 
     {
         std::cout << "Cell (" << cell.first << ") : ";
-        for (int vertex_id : cell.second.getVertices()) { std::cout << global.vertexMap().at(vertex_id).R() << ", "; }
+        for (int vertex_id : cell.second.Vertices()) { std::cout << global.vertexMap().at(vertex_id).R() << ", "; }
         std::cout << '\n';
-        for (int edge_id : cell.second.getEdges()) { std::cout << global.edgeMap().at(edge_id).getE().first << ' ' << global.edgeMap().at(edge_id).getE().second << '\n'; }
+        for (int edge_id : cell.second.Edges()) { std::cout << global.edgeMap().at(edge_id).E().first << ' ' << global.edgeMap().at(edge_id).E().second << '\n'; }
         std::cout << '\n';
     }
 }
 
 
 
-void WriteVTKFile(Global& global, const std::string& filename_graph, const std::string& filename_director) {
-
+void WriteVTKFile(Global& global, const std::string& filename_graph, const std::string& filename_defect, const std::string& filename_director)
+{
+	//graph
     std::unordered_map<int, int> index_map;
     int index = 0;
     for (const auto& vertex : global.vertexMap()) { index_map[vertex.first] = index++; }
@@ -151,13 +166,13 @@ void WriteVTKFile(Global& global, const std::string& filename_graph, const std::
     graphFile << "# vtk DataFile Version 2.0\nGraph\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << global.vertexMap().size() << " float\n";
     for (const auto& vertex : global.vertexMap()) { graphFile << vertex.second.R().x() << " " << vertex.second.R().y() << " 0\n"; }
     
-    int n = 0; for (const auto& cell : global.cellMap()) { n += cell.second.getVertices().size(); }
+    int n = 0; for (const auto& cell : global.cellMap()) { n += cell.second.Vertices().size(); }
     n += global.cellMap().size();
     graphFile << "CELLS " << global.cellMap().size() << " " << n << '\n';
     for (const auto& cell : global.cellMap()) 
     {
-		graphFile << cell.second.getVertices().size() << " ";
-		for (int v : cell.second.getVertices()) { graphFile << index_map[v] << " "; }
+		graphFile << cell.second.Vertices().size() << " ";
+		for (int v : cell.second.Vertices()) { graphFile << index_map[v] << " "; }
 		graphFile << '\n';
 	}
 	
@@ -165,13 +180,46 @@ void WriteVTKFile(Global& global, const std::string& filename_graph, const std::
 	for (int c = 0; c < global.cellMap().size(); c++) { graphFile << "7\n"; }
 	   
     graphFile.close();
+ 
+
+    //defects
+	std::unordered_set<int> defect_vertices;
+	for (int c : global.stepDefects(global.Step())) { defect_vertices.insert(global.cell(c).Vertices().begin(), global.cell(c).Vertices().end()); }
+			
+	std::unordered_map<int, int> index_map2;
+	int index2 = 0;
+	for (int v : defect_vertices) { index_map2[v] = index2++; }
+		
+	std::ofstream defectFile(filename_defect);
+	defectFile << "# vtk DataFile Version 2.0\nDefect\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << defect_vertices.size() << " float\n";
+	for (int v : defect_vertices) { defectFile << global.vert(v).R().x() << " " << global.vert(v).R().y() << " 0\n"; }
+
+	int n2 = 0; 
+	for (int c : global.stepDefects(global.Step())) { n2 += global.cell(c).Vertices().size(); }
+	n2 += global.stepDefects(global.Step()).size();
+
+	defectFile << "CELLS " << global.stepDefects(global.Step()).size() << " " << n2 << '\n';
+	for (int c : global.stepDefects(global.Step())) 
+	{
+		defectFile << global.cell(c).Vertices().size() << " ";
+		for (int v : global.cell(c).Vertices()) { defectFile << index_map2[v] << " "; }
+		defectFile << '\n'; 
+	}
+		
+	defectFile << "CELL_TYPES " << global.stepDefects(global.Step()).size() << '\n';
+	for (int c = 0; c < global.stepDefects(global.Step()).size(); c++) { defectFile << "7\n"; }
+		   
+	defectFile.close();
+
     
+    
+    //directors
     std::ofstream directorFile(filename_director);
     directorFile << "# vtk DataFile Version 2.0\nDirectors\nASCII\nDATASET POLYDATA\nPOINTS " << 2*global.cellMap().size() << " float\n";
     for (const auto& cell : global.cellMap()) 
     { 
-		directorFile << (cell.second.getCentroid()-cell.second.getDirector()).x() << " " << (cell.second.getCentroid()-cell.second.getDirector()).y() << " 0\n";
-		directorFile << (cell.second.getCentroid()+cell.second.getDirector()).x() << " " << (cell.second.getCentroid()+cell.second.getDirector()).y() << " 0\n";
+		directorFile << (cell.second.getCentroid()-0.006*cell.second.getDirector()).x() << " " << (cell.second.getCentroid()-0.006*cell.second.getDirector()).y() << " 0\n";
+		directorFile << (cell.second.getCentroid()+0.006*cell.second.getDirector()).x() << " " << (cell.second.getCentroid()+0.006*cell.second.getDirector()).y() << " 0\n";
 	}
 	
 	directorFile << "LINES " << global.cellMap().size() << " " << 3*global.cellMap().size() << "\n";

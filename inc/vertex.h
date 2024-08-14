@@ -27,7 +27,6 @@ public:
     bool operator==(const Vertex& other) const;
     
     const Point& R() const;
-    const int ID() const;
     const std::unordered_set<int>& cellContacts() const;
     const std::unordered_set<int>& edgeContacts() const;
 
@@ -38,10 +37,9 @@ public:
     void removeEdgeContact(int edge_id);
 
     void calcForce();
-    void addNoise();
     void applyForce();
 
-	void destroy();
+	void T1();
 	
 };
 

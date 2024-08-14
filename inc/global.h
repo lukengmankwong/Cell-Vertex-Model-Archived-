@@ -45,9 +45,12 @@ private:
 	Global();
 	~Global();
 
-	std::unordered_map<int, Vertex> vertex_map; int vertex_counter;
-	std::unordered_map<int, Edge> edge_map; int edge_counter;
-	std::unordered_map<int, Cell> cell_map; int cell_counter;
+	std::unordered_map<int, Vertex> v_map; int v_c;
+	std::unordered_map<int, Edge> e_map; int e_c;
+	std::unordered_map<int, Cell> c_map; int c_c;
+	
+	int timestep;
+	std::vector<std::vector<int>> defects;
 	
 public:
 
@@ -59,9 +62,19 @@ public:
         return instance;
     }
     
+    void nextStep();
+    const int Step() const;
+    void addDefects();
+    const std::vector<int>& stepDefects(int step) const;
+    
     std::unordered_map<int, Vertex>& vertexMap();
     std::unordered_map<int, Edge>& edgeMap();
     std::unordered_map<int, Cell>& cellMap();
+    
+    Vertex& vert(int v);
+    Edge& edge(int e);
+    Cell& cell(int c);
+    
     
     const int vertexCounter() const; 
     const int edgeCounter() const;
@@ -69,10 +82,12 @@ public:
 
 	const int createVertex(Point r);
 	const int createEdge(int v1, int v2);
-	const int createCell(std::vector<int>& vertex_keys, std::vector<int>& edge_keys);
+	const int createCell(std::vector<int>& vertices, std::vector<std::pair<int,int>>& edges);
 	
-	void cellNewVertex(int c, int v, int i); //add new vertex to cell vertex_keys at index i
-	void cellNewEdge(int c, int e, int i=-1); //add new edge to cell edge_keys at index i
+	void cellNewVertex(int c, int v, int i); //add new vertex to cell vertices at index i
+	void cellNewEdge(int c, int e, int i); //add new edge to cell edges at index i
+	
+	void cellRemoveEdge(int c, int e);
 	
 	void destroyVertex(int v);
 	void destroyEdge(int e);
@@ -81,7 +96,9 @@ public:
 	const bool commonEdge(int c1, int c2) const;
 	
 	void extrusion();
+	void division();
 	
+	void run();
 };
 
 #endif // GLOBALS_H

@@ -22,20 +22,22 @@ private:
 public:
     Edge(Global* g, int v1, int v2);
     bool operator==(const Edge& other) const;
-    
-    const int ID() const;
-    const std::pair<int, int>& getE() const;
-    const std::unordered_set<int>& getCellJunctions() const;
+
+    const std::pair<int, int>& E() const;
+    const std::unordered_set<int>& cellJunctions() const;
     const double getl() const;
     const double getT_l() const;
 
     void addCellJunction(int cell_id);
     void removeCellJunction(int cell_id);
     
+    const bool hasVertex(int v) const;
     bool swapVertex(int v_old, int v_new);
     
     void calcLength();
     void calcT_l();
+    
+    void T1();
 
 };
 
