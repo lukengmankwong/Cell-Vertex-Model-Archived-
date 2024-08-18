@@ -23,16 +23,16 @@ private:
     std::vector<int> nearest_neighbours;
     std::vector<bool> edge_directions;
 
-    Point r_0;
-    double A; double S; //cell area, area sign (+1 or -1)
-    double L; //cell perimeter
-    double T_A; //surface tension
+    Point r_0_;
+    double A_; double S_; //cell area, area sign (+1 or -1)
+    double L_; //cell perimeter
+    double T_A_; //surface tension
     
     double G[3]; //gyration tensor symmetric so only need 3 values (a b, b c)
     double lambda; //gyration tensor largest eigenvalue
-    double Z, X; //for defect analysis
-    Vec n; //normalised director
-    double m; //winding number around cell nearest neighbors
+    double Z_, X_; //for defect analysis
+    Vec n_; //normalised director
+    double m_; //winding number around cell nearest neighbors
     
     const int longestEdge_i() const;
     std::vector<int> nearestNeighbours();
@@ -46,15 +46,15 @@ public:
     
     const std::vector<int>& Vertices() const;
     const std::vector<int>& Edges() const;
-    
-    const double getA() const;
-    const double getS() const;
-    const double getL() const;
-    const double getT_A() const;
-    const Point& R_0() const;
-    const Vec& N() const;
-    const double getZ() const; const double getX() const;
-    const double getm() const;
+    const Point& r_0() const;
+    const double A() const; 
+    const double S() const;
+    const double L() const;
+    const double T_A() const;
+    const Vec& n() const;
+    const double Z() const; 
+    const double X() const;
+    const double m() const;
     
     const bool hasEdge(int e) const;
     const bool onBoundary() const;
@@ -63,7 +63,6 @@ public:
     void removeVertex(int v);
     void addEdge(int e, int i);
     int removeEdge(int e);
- 
     void exchangeVertex(int v_old, int v_new);
     void rotateVertices();
     
@@ -71,10 +70,10 @@ public:
 	void divide();
     
     void calcR_0();
-    void calcG();
     void calcA();
     void calcL();
     void calcT_A();
+    void calcG();
     void calcm();
     
     bool valid();

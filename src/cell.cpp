@@ -1,22 +1,23 @@
 #include "cell.h"
 
 Cell::Cell(Global* g, std::vector<int>& vertices, std::vector<std::pair<int,int>>& edges) : 
-	g(g), id(g->cellCounter()), vertices(vertices)
+	g(g), id(g->c_c()), vertices(vertices)
 {
-	m = -1000;
+	m_ = -1000;
 	for (std::pair<int, int> edge : edges)
 	{
 		this->edges.push_back(edge.first);
 		this->edge_directions.push_back(edge.second);
 	}
 	
-	A = 0;
+	A_ = 0;
 	for (int i = 0; i < vertices.size(); i++) {
-		A += g->vert(vertices[i]).R().x()*g->vert(vertices[(i+1)%vertices.size()]).R().y()
-			- g->vert(vertices[(i+1)%vertices.size()]).R().x()*g->vert(vertices[i]).R().y();
-	} A *= 0.5;
-	S = A/std::fabs(A);
+		A_ += g->vert(vertices[i]).r().x()*g->vert(vertices[(i+1)%vertices.size()]).r().y()
+			- g->vert(vertices[(i+1)%vertices.size()]).r().x()*g->vert(vertices[i]).r().y();
+	} A_ *= 0.5;
+	S_ = A_/std::fabs(A_);
 }
+
 
 void Cell::outputVertices() const 
 { 
@@ -37,17 +38,18 @@ void Cell::outputEdgeVertices() const
 	std::cout << '\n';
 }
 
+
 const std::vector<int>& Cell::Vertices() const { return vertices; }
 const std::vector<int>& Cell::Edges() const { return edges; }
-
-const double Cell::getA() const { return S*A; }
-const double Cell::getS() const { return S; }
-const double Cell::getL() const { return L; }
-const double Cell::getT_A() const { return T_A; }
-const Point& Cell::R_0() const { return r_0; }
-const Vec& Cell::N() const { return n; }
-const double Cell::getZ() const { return Z; } const double Cell::getX() const { return X; }
-const double Cell::getm() const { return m; }
+const Point& Cell::r_0() const { return r_0_; }
+const double Cell::A() const { return S_*A_; }
+const double Cell::S() const { return S_; }
+const double Cell::L() const { return L_; }
+const double Cell::T_A() const { return T_A_; }
+const Vec& Cell::n() const { return n_; }
+const double Cell::Z() const { return Z_; }
+const double Cell::X() const { return X_; }
+const double Cell::m() const { return m_; }
 
 const bool Cell::hasEdge(int e) const
 {
@@ -107,9 +109,9 @@ const int Cell::longestEdge_i() const
 	double longest_l = 0; int i_l;
 	for (int i= 0; i < edges.size(); i++) 
 	{
-		if (g->edge(edges[i]).getl() > longest_l) 
+		if (g->edge(edges[i]).l() > longest_l) 
 		{
-			longest_l = g->edge(edges[i]).getl();
+			longest_l = g->edge(edges[i]).l();
 			i_l = i;
 		}
 	} return i_l;
@@ -126,8 +128,8 @@ void Cell::divide()
 	int e_b = edges[i_vb]; //edge opposite longest edge
 	
 	//midpoints of above edges
-	Point a = CGAL::midpoint(g->vert(g->edge(e_a).v1()).R(), g->vert(g->edge(e_a).v2()).R());
-	Point b = CGAL::midpoint(g->vert(g->edge(e_b).v1()).R(), g->vert(g->edge(e_b).v2()).R());
+	Point a = CGAL::midpoint(g->vert(g->edge(e_a).v1()).r(), g->vert(g->edge(e_a).v2()).r());
+	Point b = CGAL::midpoint(g->vert(g->edge(e_b).v1()).r(), g->vert(g->edge(e_b).v2()).r());
 	//outputVertices();
 	int v_a = g->createVertex(a); int v_b = g->createVertex(b); 
 	//std::cout << "v_a: " << v_a << "\t\tv_b: " << v_b << '\n';
@@ -265,7 +267,7 @@ void Cell::extrude() //problem: beginning edge must match beginning vertices
 	calcR_0(); 														//calculate centroid, detatch cell vertices and edges from cell, and create vertex at centroid
 	for (int v : vertices) { g->vert(v).removeCellContact(id); }
 	for (int e : edges) { g->edge(e).removeCellJunction(id); }
-	int v_new = g->createVertex(r_0);
+	int v_new = g->createVertex(r_0_);
 
 	for (int e : edges)
 	{	
@@ -295,55 +297,53 @@ void Cell::calcR_0()
     double y_sum = 0;
     for (int v : vertices) 
     {
-        x_sum += g->vert(v).R().x();
-        y_sum += g->vert(v).R().y();
+        x_sum += g->vert(v).r().x();
+        y_sum += g->vert(v).r().y();
     }
-    r_0 = Point(x_sum/vertices.size(), y_sum/vertices.size());
+    r_0_ = Point(x_sum/vertices.size(), y_sum/vertices.size());
 }
 
 void Cell::calcG()
 {
-	G[0]=0;	G[1]=0;
-			G[2]=0;
-	
+	G[0]=0;	G[1]=0; G[2]=0;
 	calcR_0();
-	double x_0 = r_0.x(); double y_0 = r_0.y();
+	double x_0 = r_0_.x(); double y_0 = r_0_.y();
 	for (int v : vertices)
 	{
-		double x_v = g->vert(v).R().x();
-		double y_v = g->vert(v).R().y();
-		G[0]+=(x_v-x_0)*(x_v-x_0);	G[1]+=(x_v-x_0)*(y_v-y_0);
-									G[2]+=(y_v-y_0)*(y_v-y_0);
+		double x_v = g->vert(v).r().x();
+		double y_v = g->vert(v).r().y();
+		G[0]+=(x_v-x_0)*(x_v-x_0);	
+		G[1]+=(x_v-x_0)*(y_v-y_0);
+		G[2]+=(y_v-y_0)*(y_v-y_0);
 	}
 	
 	double f = 1.0/vertices.size();
-	G[0]*=f; 	G[1]*=f;
-				G[2]*=f;
+	G[0]*=f; G[1]*=f; G[2]*=f;
 	
 	lambda = 0.5*( G[0]+G[2] + std::sqrt( (G[0]+G[2])*(G[0]+G[2]) - 4*(G[0]*G[2]-G[1]*G[1]) ) );
-	n = Vec(1, (lambda-G[0])/G[1]) / std::sqrt( 1 + ((lambda-G[0])/G[1])*((lambda-G[0])/G[1]) );
+	n_ = Vec(1, (lambda-G[0])/G[1]) / std::sqrt( 1 + ((lambda-G[0])/G[1])*((lambda-G[0])/G[1]) );
 	
-	Z = 0.5*(G[0]-G[2]);
-	X = G[1];
+	Z_ = 0.5*(G[0]-G[2]);
+	X_ = G[1];
 }
 
 void Cell::calcA()
 {
-	A = 0;
+	A_ = 0;
 	for (int i = 0; i < vertices.size(); i++) {
-		A += g->vert(vertices[i]).R().x()*g->vert(vertices[(i+1)%vertices.size()]).R().y()
-			- g->vert(vertices[(i+1)%vertices.size()]).R().x()*g->vert(vertices[i]).R().y();
-	} A *= 0.5;
+		A_ += g->vert(vertices[i]).r().x()*g->vert(vertices[(i+1)%vertices.size()]).r().y()
+			- g->vert(vertices[(i+1)%vertices.size()]).r().x()*g->vert(vertices[i]).r().y();
+	} A_ *= 0.5;
 }
 
 void Cell::calcL()
 {
-	L = 0;
+	L_ = 0;
 	//edge lengths must already be calculated
-	for (int e : edges) L += g->edge(e).getl();
+	for (int e : edges) L_ += g->edge(e).l();
 }
 
-void Cell::calcT_A() { T_A = k_A*(A-A_0); }
+void Cell::calcT_A() { T_A_ = k_A*(A_-A_0); }
 
 std::vector<int> Cell::nearestNeighbours()
 {
@@ -381,7 +381,7 @@ void Cell::calcm()
 	std::vector<int> nn_cells = nearestNeighbours(); int n = nn_cells.size();
 	double w = 0;
 	for (int i = 0; i < nn_cells.size(); i++) w += g->D_angle(nn_cells[i], nn_cells[(i+1)%n]);
-	m = 0.5*w/pi;
+	m_ = 0.5*w/pi;
 }
 
 

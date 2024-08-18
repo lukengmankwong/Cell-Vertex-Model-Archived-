@@ -1,15 +1,15 @@
 #include "edge.h"
 
 
-Edge::Edge(Global* g, int v1, int v2) : g(g), id(g->edgeCounter()), v_1(v1), v_2(v2) {}
+Edge::Edge(Global* g, int v1, int v2) : g(g), id(g->e_c()), v_1(v1), v_2(v2) {}
 
 bool Edge::operator==(const Edge& other) const { return ((v_1 == other.v_1) && (v_2 == other.v_2)) || ((v_1== other.v_2) && (v_2 == other.v_1)); }
 
 const int Edge::v1() const { return v_1; }
 const int Edge::v2() const { return v_2; }
 const std::unordered_set<int>& Edge::cellJunctions() const { return cell_junctions; }
-const double Edge::getl() const { return l; }
-const double Edge::getT_l() const { return T_l; }
+const double Edge::l() const { return l_; }
+const double Edge::T_l() const { return T_l_; }
 
 
 void Edge::addCellJunction(int cell_id) { cell_junctions.insert(cell_id); }
@@ -49,11 +49,11 @@ bool Edge::swapVertex(int v_old, int v_new)
 }
 
 
-void Edge::calcLength() { l = std::sqrt((g->vert(v_1).R()-g->vert(v_2).R()).squared_length()); }
+void Edge::calcLength() { l_ = std::sqrt((g->vert(v_1).r()-g->vert(v_2).r()).squared_length()); }
 
 void Edge::calcT_l()
 {
-	T_l = T_l_0;
-	for (int c: cell_junctions) T_l += k_L*g->cell(c).getL();
+	T_l_ = T_l_0;
+	for (int c: cell_junctions) T_l_ += k_L*g->cell(c).L();
 }
 

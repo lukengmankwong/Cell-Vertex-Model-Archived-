@@ -1,11 +1,12 @@
 #include "vertex.h"
 
 
-Vertex::Vertex(Global* g, Point r) : g(g), id(g->vertexCounter()), r(r), force(Vec(0,0)) {}
+Vertex::Vertex(Global* g, Point r) : g(g), id(g->v_c()), r_(r), force_(Vec(0,0)) {}
 
-bool Vertex::operator==(const Vertex& other) const { return r == other.r; }
+bool Vertex::operator==(const Vertex& other) const { return r_ == other.r_; }
 
-const Point& Vertex::R() const { return r; }
+const Point& Vertex::r() const { return r_; }
+const double Vertex::m() const { return m_; }
 const std::unordered_set<int>& Vertex::cellContacts() const { return cell_contacts; }
 const std::unordered_set<int>& Vertex::edgeContacts() const { return edge_contacts; }
 
@@ -26,13 +27,13 @@ Vec Vertex::calcSurfaceForce()
 	for (int c : cell_contacts) 
 	{
 		const std::vector<int>& c_vertices = g->cell(c).Vertices();
-		int n = c_vertices.size(); int S = g->cell(c).getS();
+		int n = c_vertices.size(); int S = g->cell(c).S();
 		auto it = std::find(c_vertices.begin(), c_vertices.end(), id);
 		int j = std::distance(c_vertices.begin(), it);
 		
-		double dAdx = S*0.5*(g->vert(c_vertices[(j+1)%n]).R().y() - g->vert(c_vertices[(j-1+n)%n]).R().y());
-		double dAdy = S*0.5*(g->vert(c_vertices[(j-1+n)%n]).R().x() - g->vert(c_vertices[(j+1)%n]).R().x());
-		f_A -= g->cell(c).getT_A()*Vec(dAdx, dAdy);
+		double dAdx = S*0.5*(g->vert(c_vertices[(j+1)%n]).r().y() - g->vert(c_vertices[(j-1+n)%n]).r().y());
+		double dAdy = S*0.5*(g->vert(c_vertices[(j-1+n)%n]).r().x() - g->vert(c_vertices[(j+1)%n]).r().x());
+		f_A -= g->cell(c).T_A()*Vec(dAdx, dAdy);
 	}
 	return f_A;
 }
@@ -44,17 +45,17 @@ Vec Vertex::calcLineForce()
 		int v_; //other vertex in edge
 		(id == g->edge(e).v1()) ? v_ = g->edge(e).v2() : v_ = g->edge(e).v1();
 		
-		double x_diff = r.x() - g->vert(v_).R().x();
-		double y_diff = r.y() - g->vert(v_).R().y();
+		double x_diff = r_.x() - g->vert(v_).r().x();
+		double y_diff = r_.y() - g->vert(v_).r().y();
 		double dldx = x_diff/std::sqrt(x_diff*x_diff+y_diff*y_diff);
 		double dldy = y_diff/std::sqrt(x_diff*x_diff+y_diff*y_diff);
-		f_L -= g->edge(e).getT_l()*Vec(dldx, dldy);
+		f_L -= g->edge(e).T_l()*Vec(dldx, dldy);
 	}
 	return f_L;
 }
 
-void Vertex::calcForce() { force += calcSurfaceForce()+calcLineForce(); }
-void Vertex::applyForce() { r += a*dt*force; }
+void Vertex::calcForce() { force_ += calcSurfaceForce()+calcLineForce(); }
+void Vertex::applyForce() { r_ += a*dt*force_; }
 
 
 std::vector<int> Vertex::orderCellContacts()
@@ -80,7 +81,7 @@ std::vector<int> Vertex::orderCellContacts()
 	return contact_order;
 }
 
-void Vertex::T1()
+/*void Vertex::T1()
 {
 	//no transition unless vertex is fourfold and not on the boundary
 	
@@ -112,8 +113,8 @@ void Vertex::T1()
 	vertexIterators(c_a, it_a, it_a1, it_a2); vertexIterators(c_b, it_b, it_b1, it_b2);
  	
 	//midpoints of two edges connected to this vertex for cells a and b
-	Point a = CGAL::midpoint(g->vert(*it_a1).R(), g->vert(*it_a2).R());
-	Point b = CGAL::midpoint(g->vert(*it_b1).R(), g->vert(*it_b2).R());
+	Point a = CGAL::midpoint(g->vert(*it_a1).r(), g->vert(*it_a2).r());
+	Point b = CGAL::midpoint(g->vert(*it_b1).r(), g->vert(*it_b2).r());
 	int v_a = g->createVertex(a); int v_b = g->createVertex(b);
 	std::cout << "v_a: " << v_a << " v_b: " << v_b << '\n';
 	
@@ -178,7 +179,21 @@ void Vertex::T1()
 	std::cout << '\n';
 
 	removeEdgeContact(-1);
+}*/
+
+
+void Vertex::T1()
+{
+	
 }
 
+
+void Vertex::calcm()
+{
+	std::vector<int> nn_cells = orderCellContacts(); int n = nn_cells.size();
+	double w = 0;
+	for (int i = 0; i < nn_cells.size(); i++) w += g->D_angle(nn_cells[i], nn_cells[(i+1)%n]);
+	m_ = 0.5*w/pi;
+}
 
 

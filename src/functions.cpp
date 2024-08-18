@@ -35,7 +35,7 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 			{
 				for (const auto& vertex : global.vertexMap())
 				{
-					if (ec->source()->point() == vertex.second.R())
+					if (ec->source()->point() == vertex.second.r())
 					{
 						cell_vertices.push_back(vertex.first);
 						break;
@@ -85,7 +85,7 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 	std::unordered_set<int> cells_to_remove;
 	for (const auto& vertex : global.vertexMap())  
 	{ 
-		if ( !in(vertex.second.R()) ) 
+		if ( !in(vertex.second.r()) ) 
 		{ 
 			cells_to_remove.insert(vertex.second.cellContacts().begin(), vertex.second.cellContacts().end()); 
 		}
@@ -139,7 +139,7 @@ void outputData(Global& global)
     for (auto& cell : global.cellMap()) 
     {
         std::cout << "Cell (" << cell.first << ") : ";
-        for (int vertex_id : cell.second.Vertices()) { std::cout << global.vertexMap().at(vertex_id).R() << ", "; }
+        for (int vertex_id : cell.second.Vertices()) { std::cout << global.vertexMap().at(vertex_id).r() << ", "; }
         std::cout << '\n';
         for (int edge_id : cell.second.Edges()) { std::cout << global.edgeMap().at(edge_id).v1() << ' ' << global.edgeMap().at(edge_id).v2() << '\n'; }
         std::cout << '\n';
@@ -148,7 +148,7 @@ void outputData(Global& global)
 
 
 
-void WriteVTKFile(Global& global, const std::string& filename_graph, const std::string& filename_defect, const std::string& filename_director)
+void WriteVTKFile(Global& global, const std::string& filename_graph, const std::string& filename_cell_defect, const std::string& filename_director)
 {
 	//graph
     std::unordered_map<int, int> index_map;
@@ -157,7 +157,7 @@ void WriteVTKFile(Global& global, const std::string& filename_graph, const std::
 
     std::ofstream graphFile(filename_graph);
     graphFile << "# vtk DataFile Version 2.0\nGraph\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << global.vertexMap().size() << " float\n";
-    for (const auto& vertex : global.vertexMap()) { graphFile << vertex.second.R().x() << " " << vertex.second.R().y() << " 0\n"; }
+    for (const auto& vertex : global.vertexMap()) { graphFile << vertex.second.r().x() << " " << vertex.second.r().y() << " 0\n"; }
     
     int n = 0; for (const auto& cell : global.cellMap()) { n += cell.second.Vertices().size(); }
     n += global.cellMap().size();
@@ -175,34 +175,38 @@ void WriteVTKFile(Global& global, const std::string& filename_graph, const std::
     graphFile.close();
  
 
-    //defects
+    //cell defects
 	std::unordered_set<int> defect_vertices;
-	for (int c : global.stepDefects(global.Step())) { defect_vertices.insert(global.cell(c).Vertices().begin(), global.cell(c).Vertices().end()); }
+	const std::vector<int>& cell_defects = global.cellStepDefects(global.Step());
+	for (int c : cell_defects) { defect_vertices.insert(global.cell(c).Vertices().begin(), global.cell(c).Vertices().end()); }
 			
 	std::unordered_map<int, int> index_map2;
 	int index2 = 0;
 	for (int v : defect_vertices) { index_map2[v] = index2++; }
 		
-	std::ofstream defectFile(filename_defect);
+	std::ofstream defectFile(filename_cell_defect);
 	defectFile << "# vtk DataFile Version 2.0\nDefect\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << defect_vertices.size() << " float\n";
-	for (int v : defect_vertices) { defectFile << global.vert(v).R().x() << " " << global.vert(v).R().y() << " 0\n"; }
+	for (int v : defect_vertices) { defectFile << global.vert(v).r().x() << " " << global.vert(v).r().y() << " 0\n"; }
 
 	int n2 = 0; 
-	for (int c : global.stepDefects(global.Step())) { n2 += global.cell(c).Vertices().size(); }
-	n2 += global.stepDefects(global.Step()).size();
+	for (int c : cell_defects) { n2 += global.cell(c).Vertices().size(); }
+	n2 += cell_defects.size();
 
-	defectFile << "CELLS " << global.stepDefects(global.Step()).size() << " " << n2 << '\n';
-	for (int c : global.stepDefects(global.Step())) 
+	defectFile << "CELLS " << cell_defects.size() << " " << n2 << '\n';
+	for (int c : cell_defects) 
 	{
 		defectFile << global.cell(c).Vertices().size() << " ";
 		for (int v : global.cell(c).Vertices()) { defectFile << index_map2[v] << " "; }
 		defectFile << '\n'; 
 	}
 		
-	defectFile << "CELL_TYPES " << global.stepDefects(global.Step()).size() << '\n';
-	for (int c = 0; c < global.stepDefects(global.Step()).size(); c++) { defectFile << "7\n"; }
+	defectFile << "CELL_TYPES " << cell_defects.size() << '\n';
+	for (int c = 0; c < cell_defects.size(); c++) { defectFile << "7\n"; }
 		   
 	defectFile.close();
+
+	//vertex defects
+	
 
     
     
@@ -211,8 +215,8 @@ void WriteVTKFile(Global& global, const std::string& filename_graph, const std::
     directorFile << "# vtk DataFile Version 2.0\nns\nASCII\nDATASET POLYDATA\nPOINTS " << 2*global.cellMap().size() << " float\n";
     for (const auto& cell : global.cellMap()) 
     { 
-		directorFile << (cell.second.R_0()-0.003*cell.second.N()).x() << " " << (cell.second.R_0()-0.003*cell.second.N()).y() << " 0\n";
-		directorFile << (cell.second.R_0()+0.003*cell.second.N()).x() << " " << (cell.second.R_0()+0.003*cell.second.N()).y() << " 0\n";
+		directorFile << (cell.second.r_0()-0.003*cell.second.n()).x() << " " << (cell.second.r_0()-0.003*cell.second.n()).y() << " 0\n";
+		directorFile << (cell.second.r_0()+0.003*cell.second.n()).x() << " " << (cell.second.r_0()+0.003*cell.second.n()).y() << " 0\n";
 	}
 	
 	directorFile << "LINES " << global.cellMap().size() << " " << 3*global.cellMap().size() << "\n";

@@ -45,12 +45,13 @@ private:
 	Global();
 	~Global();
 
-	std::unordered_map<int, Vertex> v_map; int v_c;
-	std::unordered_map<int, Edge> e_map; int e_c;
-	std::unordered_map<int, Cell> c_map; int c_c;
+	std::unordered_map<int, Vertex> v_map; int v_c_;
+	std::unordered_map<int, Edge> e_map; int e_c_;
+	std::unordered_map<int, Cell> c_map; int c_c_;
 	
 	int timestep;
-	std::vector<std::vector<int>> defects;
+	std::vector<std::vector<int>> cell_defects;
+	std::vector<std::vector<int>> vertex_defects;
 	
 	void extrusion();
 	void division();
@@ -69,7 +70,7 @@ public:
     void nextStep();
     const int Step() const;
     void addDefects();
-    const std::vector<int>& stepDefects(int step) const;
+    const std::vector<int>& cellStepDefects(int step) const;
     
     std::unordered_map<int, Vertex>& vertexMap();
     std::unordered_map<int, Edge>& edgeMap();
@@ -79,9 +80,9 @@ public:
     Edge& edge(int e);
     Cell& cell(int c);
     
-    const int vertexCounter() const; 
-    const int edgeCounter() const;
-    const int cellCounter() const;
+    const int v_c() const; 
+    const int e_c() const;
+    const int c_c() const;
 
 	const int createVertex(Point r);
 	const int createEdge(int v1, int v2);

@@ -14,8 +14,8 @@ private:
 	Global* g;
     const int id;
     int v_1, v_2;
-    double l; //length
-    double T_l; //line tension
+    double l_; //length
+    double T_l_; //line tension
     
     std::unordered_set<int> cell_junctions;
   
@@ -25,8 +25,8 @@ public:
 
     const int v1() const; const int v2() const;
     const std::unordered_set<int>& cellJunctions() const;
-    const double getl() const;
-    const double getT_l() const;
+    const double l() const;
+    const double T_l() const;
 
     void addCellJunction(int cell_id);
     void removeCellJunction(int cell_id);

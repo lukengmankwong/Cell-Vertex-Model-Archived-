@@ -13,8 +13,9 @@ private:
 
 	Global* g;
     const int id;
-    Point r;
-    Vec force;
+    Point r_;
+    Vec force_;
+    double m_;
     
     std::unordered_set<int> cell_contacts;
     std::unordered_set<int> edge_contacts;
@@ -28,13 +29,13 @@ public:
     Vertex(Global* g, Point r);
     bool operator==(const Vertex& other) const;
     
-    const Point& R() const;
+    const Point& r() const;
+    const double m() const;
     const std::unordered_set<int>& cellContacts() const;
     const std::unordered_set<int>& edgeContacts() const;
 
     void addCellContact(int cell_id);
     void removeCellContact(int cell_id);
-  
     void addEdgeContact(int edge_id);
     void removeEdgeContact(int edge_id);
 
@@ -42,6 +43,8 @@ public:
     void applyForce();
 
 	void T1();
+	
+	void calcm();
 	
 };
 
