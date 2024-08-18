@@ -13,7 +13,7 @@ private:
 	
 	Global* g;
     const int id;
-    std::pair<int, int> e;
+    int v_1, v_2;
     double l; //length
     double T_l; //line tension
     
@@ -23,7 +23,7 @@ public:
     Edge(Global* g, int v1, int v2);
     bool operator==(const Edge& other) const;
 
-    const std::pair<int, int>& E() const;
+    const int v1() const; const int v2() const;
     const std::unordered_set<int>& cellJunctions() const;
     const double getl() const;
     const double getT_l() const;

@@ -13,7 +13,7 @@ private:
 
 	Global* g;
     const int id;
-    Point r; Vec dr;
+    Point r;
     Vec force;
     
     std::unordered_set<int> cell_contacts;
@@ -21,6 +21,8 @@ private:
     
     Vec calcSurfaceForce();
     Vec calcLineForce();
+    
+    std::vector<int> orderCellContacts();
 
 public:
     Vertex(Global* g, Point r);

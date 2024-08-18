@@ -5,23 +5,23 @@
 const double pi = 3.14159265358979323846264338;
 
 //parameters
-const int cell_count = 5000;
+const int cell_count = 10000;
 
-const double dt = 1e-7;
-const int timesteps = 1000;
+const double dt = 1e-8;
+const int timesteps = 1200;
 
 const double A_0 = 1.0/cell_count;
 
 const double k_A = 10;
 const double k_L = 2;
-const double T_l_0 = 0;
+const double T_l_0 = 1;
 
-const double a = 3;
+const double a = 1;
 
 
 //Global class
 
-Global::Global() : v_c(0), e_c(0), c_c(0), timestep(0) {}
+Global::Global() : v_c(0), e_c(0), c_c(0), timestep(0) { }
 Global::~Global() {}
 
 void Global::nextStep() { timestep++; }
@@ -30,10 +30,8 @@ const int Global::Step() const { return timestep; }
 void Global::addDefects()
 {
 	std::vector<int> step_defects;
-	for (auto c : c_map)
-	{
-		if (std::fabs(c.second.getm()-0.5) < 1e-3 || std::fabs(c.second.getm()+0.5) < 1e-3) step_defects.push_back(c.first);
-	}
+	for (const auto& cell : c_map) { if (std::fabs(cell.second.getm()-0.5) < 1e-3 || std::fabs(cell.second.getm()+0.5) < 1e-3 
+		|| std::fabs(cell.second.getm()-1) < 1e-3 || std::fabs(cell.second.getm()+1) < 1e-3) step_defects.push_back(cell.first); }
 	defects.push_back(step_defects);
 }
 
@@ -55,23 +53,24 @@ const int Global::cellCounter() const { return c_c; }
 const int Global::createVertex(Point r)
 {
 	v_map.emplace(v_c, Vertex(this, r));
-	return v_c++;
+	return v_c++; 																	//return id of created vertex
 }
-const int Global::createEdge(int v1, int v2)
+const int Global::createEdge(const int v1, const int v2)
 {
 	e_map.emplace(e_c, Edge(this, v1, v2));
-	v_map.at(v1).addEdgeContact(e_c); //vertex v1 knows it's part of edge
-	v_map.at(v2).addEdgeContact(e_c); //vertex v2 knows it's part of edge
-	return e_c++; //return id of the created edge
+	v_map.at(v1).addEdgeContact(e_c); 												//vertex v1 knows it's part of edge
+	v_map.at(v2).addEdgeContact(e_c); 												//vertex v2 knows it's part of edge
+	return e_c++; 																	//return id of created edge
 }
 const int Global::createCell(std::vector<int>& vertices, std::vector<std::pair<int,int>>& edges)
 {
 	c_map.emplace(c_c, Cell(this, vertices, edges));
-	for (int v : vertices) { v_map.at(v).addCellContact(c_c); } //vertices know they are part of cell
-	for (std::pair<int,int> e : edges) { e_map.at(e.first).addCellJunction(c_c); } //edges know they are part of cell
-	return c_c++; //return id of created cell
+	for (int v : vertices) { v_map.at(v).addCellContact(c_c); } 					//vertices know they are part of cell
+	for (std::pair<int,int> e : edges) { e_map.at(e.first).addCellJunction(c_c); } 	//edges know they are part of cell
+	return c_c++; 																	//return id of created cell
 }
 
+void Global::cellExchangeVertex(int c, int v_old, int v_new) { c_map.at(c).exchangeVertex(v_old, v_new); }
 
 void Global::cellNewVertex(int c, int v, int i) 
 { 
@@ -84,18 +83,16 @@ void Global::cellNewEdge(int c, int e, int i)
 	e_map.at(e).addCellJunction(c);
 }
 
-void Global::cellRemoveEdge(int c, int e)
-{
-	c_map.at(c).removeEdge(e);
-}
+void Global::cellRemoveVertex(int c, int v) { c_map.at(c).removeVertex(v); }
+int Global::cellRemoveEdge(int c, int e) { return c_map.at(c).removeEdge(e); }
 
 
 void Global::destroyVertex(int v) { v_map.erase(v);}
 void Global::destroyEdge(int e) 
 { 
 	for (int c : e_map.at(e).cellJunctions()) { c_map.at(c).removeEdge(e); }
-	v_map.at(e_map.at(e).E().first).removeEdgeContact(e);
-	v_map.at(e_map.at(e).E().second).removeEdgeContact(e);
+	v_map.at(e_map.at(e).v1()).removeEdgeContact(e);
+	v_map.at(e_map.at(e).v2()).removeEdgeContact(e);
 	e_map.erase(e); 
 }
 void Global::destroyCell(int c)
@@ -129,7 +126,7 @@ void Global::extrusion()
 				for (int c : v_map.at(vertices[i]).cellContacts())
 				{
 					auto it = std::find(small_cells.begin(), small_cells.end(), c);
-					if (it != small_cells.end()) { contact = true; break; }
+					if (it != small_cells.end()) { contact = true; }
 				}
 				i++;
 			}
@@ -153,7 +150,7 @@ void Global::division()
 				for (int c : v_map.at(vertices[i]).cellContacts())
 				{
 					auto it = std::find(large_cells.begin(), large_cells.end(), c);
-					if (it != large_cells.end()) { contact = true; break; }
+					if (it != large_cells.end()) { contact = true; }
 				}
 				i++;
 			}
@@ -163,11 +160,30 @@ void Global::division()
 	for (int c : large_cells) { c_map.at(c).divide(); }
 }
 
-void Global::run()
+void Global::T1()
 {
-	while (timestep < timesteps)
+	std::vector<int> fourfold_vertices;
+	for (const auto& vertex : v_map)
 	{
+		if (vertex.second.edgeContacts().size() == 4) fourfold_vertices.push_back(vertex.first);
 	}
+	for (int v : fourfold_vertices) v_map.at(v).T1();
+}
+
+void Global::transitions()
+{
+	for (std::pair<const int,Cell>& cell : c_map) cell.second.calcA();
+	extrusion();
+	for (std::pair<const int,Cell>& cell : c_map) cell.second.calcA();
+	division();
+	//T1();
+}
+
+const double Global::D_angle(int c_i, int c_j) const
+{
+	double Z_i = c_map.at(c_i).getZ(); double X_i = c_map.at(c_i).getX(); double S_i = std::sqrt(X_i*X_i+Z_i*Z_i);
+	double Z_j = c_map.at(c_j).getZ(); double X_j = c_map.at(c_j).getX(); double S_j = std::sqrt(X_j*X_j+Z_j*Z_j);
+	return std::asin( (Z_i*X_j-X_i*Z_j) / (S_i*S_j) );
 }
 
 

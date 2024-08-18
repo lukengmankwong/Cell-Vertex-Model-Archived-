@@ -1,14 +1,12 @@
 #include "edge.h"
 
 
-Edge::Edge(Global* g, int v1, int v2) : g(g), id(g->edgeCounter())
-{
-	e = std::make_pair(v1, v2);
-}
+Edge::Edge(Global* g, int v1, int v2) : g(g), id(g->edgeCounter()), v_1(v1), v_2(v2) {}
 
-bool Edge::operator==(const Edge& other) const { return ((e.first == other.e.first) && (e.second == other.e.second)) || ((e.first == other.e.second) && (e.second == other.e.first)); }
+bool Edge::operator==(const Edge& other) const { return ((v_1 == other.v_1) && (v_2 == other.v_2)) || ((v_1== other.v_2) && (v_2 == other.v_1)); }
 
-const std::pair<int, int>& Edge::E() const { return e; }
+const int Edge::v1() const { return v_1; }
+const int Edge::v2() const { return v_2; }
 const std::unordered_set<int>& Edge::cellJunctions() const { return cell_junctions; }
 const double Edge::getl() const { return l; }
 const double Edge::getT_l() const { return T_l; }
@@ -21,25 +19,29 @@ void Edge::removeCellJunction(int cell_id)
     cell_junctions.erase(cell_id);
     if (cell_junctions.size() == 0) 
     { 
-		g->vert(e.first).removeEdgeContact(id);
-		g->vert(e.second).removeEdgeContact(id);
+		g->vert(v_1).removeEdgeContact(id);
+		g->vert(v_2).removeEdgeContact(id);
 		g->edgeMap().erase(id); 
 	}
 }
 
-const bool Edge::hasVertex(int v) const { return (v == e.first || v == e.second); }
+const bool Edge::hasVertex(int v) const { return (v == v_1 || v == v_2); }
 
 bool Edge::swapVertex(int v_old, int v_new)
 {
-	if (v_old == e.first) {
-		e.first = v_new;
-		for (int c : cell_junctions) { g->cell(c).removeVertex(v_old); }
+	if (v_old == v_1) 
+	{
+		v_1 = v_new;
+		for (int c : cell_junctions) g->cellExchangeVertex(c, v_old, v_new);
+		g->vert(v_new).addEdgeContact(id);
 		g->vert(v_old).removeEdgeContact(id);
 		return true;
 	}
-	else if (v_old == e.second) {
-		e.second = v_new;
-		for (int c : cell_junctions) { g->cell(c).removeVertex(v_old); }
+	else if (v_old == v_2) 
+	{
+		v_2 = v_new;
+		for (int c : cell_junctions) g->cellExchangeVertex(c, v_old, v_new);
+		g->vert(v_new).addEdgeContact(id);
 		g->vert(v_old).removeEdgeContact(id);
 		return true;
 	}
@@ -47,13 +49,11 @@ bool Edge::swapVertex(int v_old, int v_new)
 }
 
 
-void Edge::calcLength() { l = std::sqrt((g->vert(e.first).R()-g->vert(e.second).R()).squared_length()); }
+void Edge::calcLength() { l = std::sqrt((g->vert(v_1).R()-g->vert(v_2).R()).squared_length()); }
 
 void Edge::calcT_l()
 {
 	T_l = T_l_0;
-	for (int c: cell_junctions) {
-		T_l += k_L*g->cell(c).getL();
-	}
+	for (int c: cell_junctions) T_l += k_L*g->cell(c).getL();
 }
 

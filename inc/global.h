@@ -52,6 +52,10 @@ private:
 	int timestep;
 	std::vector<std::vector<int>> defects;
 	
+	void extrusion();
+	void division();
+	void T1();
+	
 public:
 
 	Global(const Global&) = delete;
@@ -75,7 +79,6 @@ public:
     Edge& edge(int e);
     Cell& cell(int c);
     
-    
     const int vertexCounter() const; 
     const int edgeCounter() const;
     const int cellCounter() const;
@@ -87,7 +90,10 @@ public:
 	void cellNewVertex(int c, int v, int i); //add new vertex to cell vertices at index i
 	void cellNewEdge(int c, int e, int i); //add new edge to cell edges at index i
 	
-	void cellRemoveEdge(int c, int e);
+	void cellRemoveVertex(int c, int v);
+	int cellRemoveEdge(int c, int e);
+	
+	void cellExchangeVertex(int c, int v_old, int v_new);
 	
 	void destroyVertex(int v);
 	void destroyEdge(int e);
@@ -95,10 +101,10 @@ public:
 	
 	const bool commonEdge(int c1, int c2) const;
 	
-	void extrusion();
-	void division();
-	
+	void transitions();
 	void run();
+	
+	const double D_angle(int c_i, int c_j) const; 
 };
 
 #endif // GLOBALS_H

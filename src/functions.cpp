@@ -54,13 +54,13 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 				bool found = false;
 				for (const auto& edge : global.edgeMap())
 				{
-					if (edge.second.E().first == v1 && edge.second.E().second == v2)
+					if (edge.second.v1() == v1 && edge.second.v2() == v2)
 					{
 						cell_edges.push_back(std::make_pair(edge.first, 0));
 						found = true;
 						break;
 					}
-					else if (edge.second.E().first == v2 && edge.second.E().second == v1)
+					else if (edge.second.v1() == v2 && edge.second.v2() == v1)
 					{
 						cell_edges.push_back(std::make_pair(edge.first, 1));
 						found = true;
@@ -77,7 +77,7 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 		removeDuplicates(cell_edges); //temporary fix
         global.createCell(cell_vertices, cell_edges);
         //for (int v : cell_vertices) { std::cout << v << ' '; } std::cout << '\n';
-		//for (auto e : cell_edges) { std::cout << global.edge(e.first).E().first << ' ' << global.edge(e.first).E().second << '\t'; } std::cout << "\n\n";
+		//for (auto e : cell_edges) { std::cout << global.edge(e.first).v1() << ' ' << global.edge(e.first).v2() << '\t'; } std::cout << "\n\n";
     } 
     
     
@@ -106,16 +106,13 @@ void runSimulation(Global& global, int time_steps)
 {
     for (int step = 0; step < time_steps; step++)
     { 
-		//for (auto& vertex : global.vertexMap()) { if (vertex.second.edgeContacts().size() == 4) vertex.second.T1(); }
-		//std::cout << "step " << step << ":\n";
-				
-
-		/*std::cout << "cell map size: " << global.cellMap().size() << "\n";
-		std::cout << "edge map size: " << global.edgeMap().size() << "\n";
-		std::cout << "vertex map size: " << global.vertexMap().size() << "\n";*/
-		for (auto& cell : global.cellMap()) { cell.second.calcm(); }
+		//std::cout << "step " << step << ":\n";			
+		//std::cout << "cell map size: " << global.cellMap().size() << "\n";
+		//std::cout << "edge map size: " << global.edgeMap().size() << "\n";
+		//std::cout << "vertex map size: " << global.vertexMap().size() << "\n\n";
+		global.transitions();
+		
 		for (auto& edge : global.edgeMap()) { edge.second.calcLength(); }
-
 		for (auto& cell : global.cellMap()) 
 		{ 
 			cell.second.calcL();
@@ -123,20 +120,16 @@ void runSimulation(Global& global, int time_steps)
 			cell.second.calcT_A();
 			cell.second.calcG();
 		}
+		for (auto& cell : global.cellMap()) { cell.second.calcm(); }
 		global.addDefects();
-		WriteVTKFile(global, "graph" + std::to_string(step) + ".vtk", "defects" + std::to_string(step) + ".vtk", "directors" + std::to_string(step) + ".vtk");
 		
-		//global.extrusion();
-		global.division();
-			
-		for (auto& edge : global.edgeMap()) { edge.second.calcT_l(); }
+		for (auto& edge : global.edgeMap()) { edge.second.calcT_l(); }		
 		for (auto& vertex : global.vertexMap()) { vertex.second.calcForce(); }		
         for (auto& vertex : global.vertexMap()) { vertex.second.applyForce(); }
-        
+        WriteVTKFile(global, "graph" + std::to_string(step) + ".vtk", "defects" + std::to_string(step) + ".vtk", "directors" + std::to_string(step) + ".vtk");
 		global.nextStep();
         	
     }
-    //WriteVTKFile(global, "graph" + std::to_string(time_steps) + ".vtk", "defects" + std::to_string(time_steps) + ".vtk", "directors" + std::to_string(time_steps) + ".vtk");
 }
 
 
@@ -148,7 +141,7 @@ void outputData(Global& global)
         std::cout << "Cell (" << cell.first << ") : ";
         for (int vertex_id : cell.second.Vertices()) { std::cout << global.vertexMap().at(vertex_id).R() << ", "; }
         std::cout << '\n';
-        for (int edge_id : cell.second.Edges()) { std::cout << global.edgeMap().at(edge_id).E().first << ' ' << global.edgeMap().at(edge_id).E().second << '\n'; }
+        for (int edge_id : cell.second.Edges()) { std::cout << global.edgeMap().at(edge_id).v1() << ' ' << global.edgeMap().at(edge_id).v2() << '\n'; }
         std::cout << '\n';
     }
 }
@@ -215,11 +208,11 @@ void WriteVTKFile(Global& global, const std::string& filename_graph, const std::
     
     //directors
     std::ofstream directorFile(filename_director);
-    directorFile << "# vtk DataFile Version 2.0\nDirectors\nASCII\nDATASET POLYDATA\nPOINTS " << 2*global.cellMap().size() << " float\n";
+    directorFile << "# vtk DataFile Version 2.0\nns\nASCII\nDATASET POLYDATA\nPOINTS " << 2*global.cellMap().size() << " float\n";
     for (const auto& cell : global.cellMap()) 
     { 
-		directorFile << (cell.second.getCentroid()-0.006*cell.second.getDirector()).x() << " " << (cell.second.getCentroid()-0.006*cell.second.getDirector()).y() << " 0\n";
-		directorFile << (cell.second.getCentroid()+0.006*cell.second.getDirector()).x() << " " << (cell.second.getCentroid()+0.006*cell.second.getDirector()).y() << " 0\n";
+		directorFile << (cell.second.R_0()-0.003*cell.second.N()).x() << " " << (cell.second.R_0()-0.003*cell.second.N()).y() << " 0\n";
+		directorFile << (cell.second.R_0()+0.003*cell.second.N()).x() << " " << (cell.second.R_0()+0.003*cell.second.N()).y() << " 0\n";
 	}
 	
 	directorFile << "LINES " << global.cellMap().size() << " " << 3*global.cellMap().size() << "\n";
