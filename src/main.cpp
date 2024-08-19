@@ -23,7 +23,16 @@ int main()
 	Global& global = Global::get();
 	
     std::vector<Point> points; points.reserve(cell_count);
-    for (int i = 0; i < cell_count; i++) { points.push_back( Point( ((static_cast<double>(std::rand())/RAND_MAX)-0.5), ((static_cast<double>(std::rand())/RAND_MAX)-0.5) ) ); }	
+    //for (int i = 0; i < cell_count; i++) { points.push_back( Point( ((static_cast<double>(std::rand())/RAND_MAX)-0.5), ((static_cast<double>(std::rand())/RAND_MAX)-0.5) ) ); }	
+	int k = std::sqrt(cell_count);
+	for (int i = -k/2; i < k/2; i++)
+	{
+		for (int j = -k/2; j < k/2; j++)
+		{
+			Point p((i+((static_cast<double>(std::rand())/RAND_MAX)-0.5))/k, (j+0.5*(i%2)+((static_cast<double>(std::rand())/RAND_MAX)-0.5))/k);
+			points.push_back(p);
+		}
+	}
 	
     DT d_tri; 
     d_tri.insert(points.begin(), points.end()); //Delauney triangulation from points

@@ -42,7 +42,7 @@ public:
     void calcForce();
     void applyForce();
 
-	void T1();
+	void T1split();
 	
 	void calcm();
 	

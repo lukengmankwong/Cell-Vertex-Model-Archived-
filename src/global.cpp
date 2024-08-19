@@ -5,10 +5,10 @@
 const double pi = 3.14159265358979323846264338;
 
 //parameters
-const int cell_count = 1000;
+const int cell_count = 20000;
 
 const double dt = 1e-8;
-const int timesteps = 1200;
+const int timesteps = 1000;
 
 const double A_0 = 1.0/cell_count;
 
@@ -21,7 +21,11 @@ const double a = 1;
 
 //Global class
 
-Global::Global() : v_c_(0), e_c_(0), c_c_(0), timestep(0) { }
+Global::Global() : v_c_(0), e_c_(0), c_c_(0), timestep(0)
+{
+	cell_defects.reserve(timesteps);
+	vertex_defects.reserve(timesteps);
+}
 Global::~Global() {}
 
 void Global::nextStep() { timestep++; }
@@ -30,17 +34,18 @@ const int Global::Step() const { return timestep; }
 void Global::addDefects()
 {
 	std::vector<int> cell_step_defects;
-	for (const auto& cell : c_map) { if (std::fabs(cell.second.m()-0.5) < 1e-3 || std::fabs(cell.second.m()+0.5) < 1e-3 
-		|| std::fabs(cell.second.m()-1) < 1e-3 || std::fabs(cell.second.m()+1) < 1e-3) cell_step_defects.push_back(cell.first); }
+	for (const auto& cell : c_map) { if (std::fabs(cell.second.m()-0.5) < 1e-4 || std::fabs(cell.second.m()+0.5) < 1e-4 
+		|| std::fabs(cell.second.m()-1) < 1e-4 || std::fabs(cell.second.m()+1) < 1e-4) cell_step_defects.push_back(cell.first); }
 	cell_defects.push_back(cell_step_defects);
 	
 	std::vector<int> vertex_step_defects;
-	for (const auto& vertex : v_map) { if (std::fabs(vertex.second.m()-0.5) < 1e-3 || std::fabs(vertex.second.m()+0.5) < 1e-3 
-		|| std::fabs(vertex.second.m()-1) < 1e-3 || std::fabs(vertex.second.m()+1) < 1e-3) vertex_step_defects.push_back(vertex.first); }
+	for (const auto& vertex : v_map) { if (std::fabs(vertex.second.m()-0.5) < 1e-4 || std::fabs(vertex.second.m()+0.5) < 1e-4
+		|| std::fabs(vertex.second.m()-1) < 1e-4 || std::fabs(vertex.second.m()+1) < 1e-4) vertex_step_defects.push_back(vertex.first); }
 	vertex_defects.push_back(vertex_step_defects);
 }
 
-const std::vector<int>& Global::cellStepDefects(int step) const { return cell_defects[step]; }
+const std::vector<int>& Global::cellStepDefects() const { return cell_defects[timestep]; }
+const std::vector<int>& Global::vertexStepDefects() const { return vertex_defects[timestep]; }
 
 std::unordered_map<int, Vertex>& Global::vertexMap() { return v_map; }
 std::unordered_map<int, Edge>& Global::edgeMap() { return e_map; }
@@ -67,11 +72,11 @@ const int Global::createEdge(const int v1, const int v2)
 	v_map.at(v2).addEdgeContact(e_c_); 												//vertex v2 knows it's part of edge
 	return e_c_++; 																	//return id of created edge
 }
-const int Global::createCell(std::vector<int>& vertices, std::vector<std::pair<int,int>>& edges)
+const int Global::createCell(std::vector<int>& vertices, std::vector<int>& edges)
 {
 	c_map.emplace(c_c_, Cell(this, vertices, edges));
 	for (int v : vertices) { v_map.at(v).addCellContact(c_c_); } 					//vertices know they are part of cell
-	for (std::pair<int,int> e : edges) { e_map.at(e.first).addCellJunction(c_c_); } 	//edges know they are part of cell
+	for (int e : edges) { e_map.at(e).addCellJunction(c_c_); } 	//edges know they are part of cell
 	return c_c_++; 																	//return id of created cell
 }
 
@@ -146,7 +151,7 @@ void Global::division()
 	std::vector<int> large_cells;
 	for (const auto& cell : c_map)
 	{
-		if (cell.second.A() > 2*A_0)
+		if (cell.second.A() > 2.1*A_0)
 		{
 			const std::vector<int>& vertices = c_map.at(cell.first).Vertices();
 			int i = 0; bool contact = false;
@@ -168,11 +173,8 @@ void Global::division()
 void Global::T1()
 {
 	std::vector<int> fourfold_vertices;
-	for (const auto& vertex : v_map)
-	{
-		if (vertex.second.edgeContacts().size() == 4) fourfold_vertices.push_back(vertex.first);
-	}
-	for (int v : fourfold_vertices) v_map.at(v).T1();
+	for (const auto& vertex : v_map) { if (vertex.second.edgeContacts().size() == 4) fourfold_vertices.push_back(vertex.first); }
+	for (int v : fourfold_vertices){ v_map.at(v).T1split(); }
 }
 
 void Global::transitions()
@@ -181,7 +183,6 @@ void Global::transitions()
 	extrusion();
 	for (std::pair<const int,Cell>& cell : c_map) cell.second.calcA();
 	division();
-	//T1();
 }
 
 const double Global::D_angle(int c_i, int c_j) const

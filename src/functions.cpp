@@ -1,12 +1,12 @@
 #include "functions.h"
 
-void removeDuplicates(std::vector<std::pair<int, int>>& vec) {
+void removeDuplicates(std::vector<int>& vec) {
     std::unordered_set<int> seen;   // To track seen elements
     auto it = vec.begin();
 
     while (it != vec.end()) {
         // If the element is seen for the first time, keep it
-        if (seen.insert(it->first).second) {
+        if (seen.insert(*it).second) {
             ++it;
         } else {
             // Otherwise, erase the duplicate
@@ -45,7 +45,7 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 			++ec;
         } while (ec != ec_start);
 		
-        std::vector<std::pair<int, int>> cell_edges; 
+        std::vector<int> cell_edges; 
         if (true)
         {
 			for (int i = 0; i < cell_vertices.size(); i++)
@@ -56,20 +56,20 @@ void getInitialData(VD& vd, Global& global, bool (*in)(const Point&))
 				{
 					if (edge.second.v1() == v1 && edge.second.v2() == v2)
 					{
-						cell_edges.push_back(std::make_pair(edge.first, 0));
+						cell_edges.push_back(edge.first);
 						found = true;
 						break;
 					}
 					else if (edge.second.v1() == v2 && edge.second.v2() == v1)
 					{
-						cell_edges.push_back(std::make_pair(edge.first, 1));
+						cell_edges.push_back(edge.first);
 						found = true;
 						break;
 					}
 				}
 				if (!found)
 				{
-					cell_edges.push_back(std::make_pair(global.createEdge(v1, v2), 0));
+					cell_edges.push_back(global.createEdge(v1, v2));
 				}		
 			}
 		}
@@ -111,7 +111,7 @@ void runSimulation(Global& global, int time_steps)
 		//std::cout << "edge map size: " << global.edgeMap().size() << "\n";
 		//std::cout << "vertex map size: " << global.vertexMap().size() << "\n\n";
 		global.transitions();
-		
+
 		for (auto& edge : global.edgeMap()) { edge.second.calcLength(); }
 		for (auto& cell : global.cellMap()) 
 		{ 
@@ -120,13 +120,16 @@ void runSimulation(Global& global, int time_steps)
 			cell.second.calcT_A();
 			cell.second.calcG();
 		}
+
+		
 		for (auto& cell : global.cellMap()) { cell.second.calcm(); }
 		global.addDefects();
 		
 		for (auto& edge : global.edgeMap()) { edge.second.calcT_l(); }		
 		for (auto& vertex : global.vertexMap()) { vertex.second.calcForce(); }		
         for (auto& vertex : global.vertexMap()) { vertex.second.applyForce(); }
-        WriteVTKFile(global, "graph" + std::to_string(step) + ".vtk", "defects" + std::to_string(step) + ".vtk", "directors" + std::to_string(step) + ".vtk");
+        WriteVTKFile(global, "graph" + std::to_string(step) + ".vtk", "cell defects" + std::to_string(step) + ".vtk", "vertex defects" + std::to_string(step) + ".vtk", "directors" + std::to_string(step) + ".vtk");
+        global.T1();
 		global.nextStep();
         	
     }
@@ -147,8 +150,7 @@ void outputData(Global& global)
 }
 
 
-
-void WriteVTKFile(Global& global, const std::string& filename_graph, const std::string& filename_cell_defect, const std::string& filename_director)
+void WriteVTKFile(Global& global, const std::string& filename_graph, const std::string& filename_cell_defect, const std::string& filename_vertex_defect, const std::string& filename_director)
 {
 	//graph
     std::unordered_map<int, int> index_map;
@@ -177,7 +179,7 @@ void WriteVTKFile(Global& global, const std::string& filename_graph, const std::
 
     //cell defects
 	std::unordered_set<int> defect_vertices;
-	const std::vector<int>& cell_defects = global.cellStepDefects(global.Step());
+	const std::vector<int>& cell_defects = global.cellStepDefects();
 	for (int c : cell_defects) { defect_vertices.insert(global.cell(c).Vertices().begin(), global.cell(c).Vertices().end()); }
 			
 	std::unordered_map<int, int> index_map2;
@@ -206,8 +208,15 @@ void WriteVTKFile(Global& global, const std::string& filename_graph, const std::
 	defectFile.close();
 
 	//vertex defects
-	
+	std::ofstream file(filename_vertex_defect);
 
+    file << "# vtk DataFile Version 3.0\nPoint data\nASCII\nDATASET POLYDATA\n";
+
+    file << "POINTS " << global.vertexStepDefects().size() << " float\n";
+    for (int v : global.vertexStepDefects()) file << global.vert(v).r().x() << " " << global.vert(v).r().y() << " 0\n";
+
+    file.close();
+	
     
     
     //directors

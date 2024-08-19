@@ -32,12 +32,12 @@ public:
     void removeCellJunction(int cell_id);
     
     const bool hasVertex(int v) const;
-    bool swapVertex(int v_old, int v_new);
+    bool swapVertex_rep(int v_old, int v_new); //changes cell vertices
     
     void calcLength();
     void calcT_l();
     
-    void T1();
+    void T1merge();
 
 };
 

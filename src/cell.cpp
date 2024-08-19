@@ -1,15 +1,8 @@
 #include "cell.h"
 
-Cell::Cell(Global* g, std::vector<int>& vertices, std::vector<std::pair<int,int>>& edges) : 
-	g(g), id(g->c_c()), vertices(vertices)
-{
-	m_ = -1000;
-	for (std::pair<int, int> edge : edges)
-	{
-		this->edges.push_back(edge.first);
-		this->edge_directions.push_back(edge.second);
-	}
-	
+Cell::Cell(Global* g, std::vector<int>& vertices, std::vector<int>& edges) : 
+	g(g), id(g->c_c()), vertices(vertices), edges(edges)
+{	
 	A_ = 0;
 	for (int i = 0; i < vertices.size(); i++) {
 		A_ += g->vert(vertices[i]).r().x()*g->vert(vertices[(i+1)%vertices.size()]).r().y()
@@ -40,20 +33,21 @@ void Cell::outputEdgeVertices() const
 
 
 const std::vector<int>& Cell::Vertices() const { return vertices; }
-const std::vector<int>& Cell::Edges() const { return edges; }
-const Point& Cell::r_0() const { return r_0_; }
-const double Cell::A() const { return S_*A_; }
-const double Cell::S() const { return S_; }
-const double Cell::L() const { return L_; }
-const double Cell::T_A() const { return T_A_; }
-const Vec& Cell::n() const { return n_; }
-const double Cell::Z() const { return Z_; }
-const double Cell::X() const { return X_; }
-const double Cell::m() const { return m_; }
+const std::vector<int>& Cell::Edges() 	 const { return edges; }
+
+const Point& 	Cell::r_0() const { return r_0_; }
+const double 	Cell::A() 	const { return S_*A_; }
+const double 	Cell::S() 	const { return S_; }
+const double 	Cell::L() 	const { return L_; }
+const double 	Cell::T_A() const { return T_A_; }
+const Vec& 	 	Cell::n() 	const { return n_; }
+const double 	Cell::Z() 	const { return Z_; }
+const double 	Cell::X() 	const { return X_; }
+const double 	Cell::m() 	const { return m_; }
 
 const bool Cell::hasEdge(int e) const
 {
-	auto it = std::find(edges.begin(), edges.end(), e);
+	std::vector<int>::const_iterator it = std::find(edges.begin(), edges.end(), e);
 	return it != edges.end();
 }
 
@@ -149,7 +143,7 @@ void Cell::divide()
 			std::vector<int>::const_iterator it1 = std::find(vertices_c_x.begin(), vertices_c_x.end(), g->edge(e_x).v1());
 			std::vector<int>::const_iterator it2 = std::find(vertices_c_x.begin(), vertices_c_x.end(), g->edge(e_x).v2());
 			if (it1 == vertices_c_x.begin() && it2 != (it1+1)) i_ex = 0;
-			else if (it2 == vertices_c_x.begin() && it1 != (it2+1)) i_ex =0;
+			else if (it2 == vertices_c_x.begin() && it1 != (it2+1)) i_ex = 0;
 			else i_ex = (it1 < it2) ? std::distance(vertices_c_x.begin(), it2) : std::distance(vertices_c_x.begin(), it1);
 			g->cellNewVertex(c_x, v_x, i_ex);
 		}
@@ -194,7 +188,7 @@ void Cell::divide()
 	
 	auto isEdge = [this](int e, int v_1, int v_2) { return ( (v_1 == g->edge(e).v1() && v_2 == g->edge(e).v2()) || (v_1 == g->edge(e).v2() && v_2 == g->edge(e).v1()) ); };	
 	//find vertices of the two new cells in rotaional order
-	std::vector<int> cell_p_vertices, cell_q_vertices; std::vector<std::pair<int, int>> cell_p_edges, cell_q_edges;
+	std::vector<int> cell_p_vertices, cell_q_vertices; std::vector<int> cell_p_edges, cell_q_edges;
 	bool f_q = !(i_va < i_vb);
 	for (int i = 0; i < vertices.size(); i++) //neeed to fix
 	{
@@ -223,25 +217,21 @@ void Cell::divide()
 	//update edges of two new cells in rotational order
 	for (int i = 0; i < cell_p_vertices.size(); i++)
 	{
-		if (isEdge(e_a2, cell_p_vertices[i], cell_p_vertices[(i+1)%cell_p_vertices.size()])) cell_p_edges.push_back({e_a2, 0});
-		else if (isEdge(e_b1, cell_p_vertices[i], cell_p_vertices[(i+1)%cell_p_vertices.size()])) cell_p_edges.push_back({e_b1, 0});
-		else if (isEdge(e_new, cell_p_vertices[i], cell_p_vertices[(i+1)%cell_p_vertices.size()])) cell_p_edges.push_back({e_new, 0});
-		else for (int e : edges) if (isEdge(e, cell_p_vertices[i], cell_p_vertices[(i+1)%cell_p_vertices.size()])) cell_p_edges.push_back({e, 0});
+		if (isEdge(e_a2, cell_p_vertices[i], cell_p_vertices[(i+1)%cell_p_vertices.size()])) cell_p_edges.push_back(e_a2);
+		else if (isEdge(e_b1, cell_p_vertices[i], cell_p_vertices[(i+1)%cell_p_vertices.size()])) cell_p_edges.push_back(e_b1);
+		else if (isEdge(e_new, cell_p_vertices[i], cell_p_vertices[(i+1)%cell_p_vertices.size()])) cell_p_edges.push_back(e_new);
+		else for (int e : edges) if (isEdge(e, cell_p_vertices[i], cell_p_vertices[(i+1)%cell_p_vertices.size()])) cell_p_edges.push_back(e);
 	}
 	for (int i = 0; i < cell_q_vertices.size(); i++)
 	{
-		if (isEdge(e_b2, cell_q_vertices[i], cell_q_vertices[(i+1)%cell_q_vertices.size()])) cell_q_edges.push_back({e_b2, 0});
-		else if (isEdge(e_a1, cell_q_vertices[i], cell_q_vertices[(i+1)%cell_q_vertices.size()])) cell_q_edges.push_back({e_a1, 0});
-		else if (isEdge(e_new, cell_q_vertices[i], cell_q_vertices[(i+1)%cell_q_vertices.size()])) cell_q_edges.push_back({e_new, 0});
-		else for (int e : edges) if (isEdge(e, cell_q_vertices[i], cell_q_vertices[(i+1)%cell_q_vertices.size()])) cell_q_edges.push_back({e, 0});
+		if (isEdge(e_b2, cell_q_vertices[i], cell_q_vertices[(i+1)%cell_q_vertices.size()])) cell_q_edges.push_back(e_b2);
+		else if (isEdge(e_a1, cell_q_vertices[i], cell_q_vertices[(i+1)%cell_q_vertices.size()])) cell_q_edges.push_back(e_a1);
+		else if (isEdge(e_new, cell_q_vertices[i], cell_q_vertices[(i+1)%cell_q_vertices.size()])) cell_q_edges.push_back(e_new);
+		else for (int e : edges) if (isEdge(e, cell_q_vertices[i], cell_q_vertices[(i+1)%cell_q_vertices.size()])) cell_q_edges.push_back(e);
 	}
 	
 	int c_p = g->createCell(cell_p_vertices, cell_p_edges);
 	int c_q = g->createCell(cell_q_vertices, cell_q_edges);
-	
-	//int p3 = 0; int p4 = 0;
-	//while (!isEdge(g->cell(c_p).Edges()[0],g->cell(c_p).Vertices()[0], g->cell(c_p).Vertices()[1]) && p1<g->cell(c_p).Vertices().size()) { g->cell(c_p).rotateVertices(); p3++; }
-	//while (!isEdge(g->cell(c_q).Edges()[0],g->cell(c_q).Vertices()[0], g->cell(c_q).Vertices()[1]) && p2<g->cell(c_q).Vertices().size()) { g->cell(c_q).rotateVertices(); p4++; }
 	
 	/*std::cout << "AFTER:\n";
 	g->cell(c_a).outputVertices(); g->cell(c_a).outputEdgeVertices();
@@ -258,7 +248,7 @@ void Cell::divide()
 	g->destroyCell(id);
 }
 
-void Cell::extrude() //problem: beginning edge must match beginning vertices
+void Cell::extrude()
 {
 	//simply destroy cell if it is on a boundary or is a triangle
 	if (onBoundary()) { g->destroyCell(id); return; }
@@ -282,7 +272,7 @@ void Cell::extrude() //problem: beginning edge must match beginning vertices
 	for (int v : vertices)
 	{
 		int e = *(g->vert(v).edgeContacts().begin());				//only element left in the vertex edge_contacts (incident edge)
-		g->edge(e).swapVertex(v, v_new);							//reconnect incident edges so that they meet at r_0, this deletes the old vertex and tells cells it no longer has this vertex
+		g->edge(e).swapVertex_rep(v, v_new);							//reconnect incident edges so that they meet at r_0, this deletes the old vertex and tells cells it no longer has this vertex
 	}
 	for (int c : g->vert(v_new).cellContacts()) { if (!(g->cell(c).valid())) g->cell(c).rotateVertices(); } //{ g->cell(c).outputVertices(); g->cell(c).outputEdgeVertices(); }}
 	//for (int c : g->vert(v_new).cellContacts()) { if (!(g->cell(c).valid())) { g->cell(c).outputVertices(); g->cell(c).outputEdgeVertices(); }}

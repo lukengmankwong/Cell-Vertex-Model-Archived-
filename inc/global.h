@@ -55,10 +55,10 @@ private:
 	
 	void extrusion();
 	void division();
-	void T1();
+
 	
 public:
-
+	void T1();
 	Global(const Global&) = delete;
     Global& operator=(const Global&) = delete;
     static Global& get() 
@@ -70,7 +70,8 @@ public:
     void nextStep();
     const int Step() const;
     void addDefects();
-    const std::vector<int>& cellStepDefects(int step) const;
+    const std::vector<int>& cellStepDefects() const;
+    const std::vector<int>& vertexStepDefects() const;
     
     std::unordered_map<int, Vertex>& vertexMap();
     std::unordered_map<int, Edge>& edgeMap();
@@ -86,7 +87,7 @@ public:
 
 	const int createVertex(Point r);
 	const int createEdge(int v1, int v2);
-	const int createCell(std::vector<int>& vertices, std::vector<std::pair<int,int>>& edges);
+	const int createCell(std::vector<int>& vertices, std::vector<int>& edges);
 	
 	void cellNewVertex(int c, int v, int i); //add new vertex to cell vertices at index i
 	void cellNewEdge(int c, int e, int i); //add new edge to cell edges at index i

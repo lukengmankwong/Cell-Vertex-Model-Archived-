@@ -78,113 +78,101 @@ std::vector<int> Vertex::orderCellContacts()
 			}
 		}
 	}
+	//ensure anticlockwise orientation
+	for (int c : cell_contacts) g->cell(c).calcR_0();
+	double A = 0;
+	for (int i = 0; i < contact_order.size(); i++) 
+	{	A += g->cell(contact_order[i]).r_0().x()*g->cell(contact_order[(i+1)%contact_order.size()]).r_0().y()
+			- g->cell(contact_order[(i+1)%contact_order.size()]).r_0().x()*g->cell(contact_order[i]).r_0().y(); } 
+	if (A < 0) std::reverse(contact_order.begin(), contact_order.end());
 	return contact_order;
+	
 }
 
-/*void Vertex::T1()
+
+void Vertex::T1split()
 {
-	//no transition unless vertex is fourfold and not on the boundary
+	if (cell_contacts.size() != 4 || edge_contacts.size() != 4) return;
+	for (int c : cell_contacts) if (g->cell(c).onBoundary()) return; 
 	
-	if (cell_contacts.size() !=4) { return; }
-	for (int c : cell_contacts) { if (g->cell(c).onBoundary()) return; }
+	//std::cout << "vertex id: " << id << '\n';
+	//affected cells, a,b change vertex p,q gets new edge
+	std::vector<int> nn_cells = orderCellContacts();
+	const int c_a = nn_cells[0]; const int c_b = nn_cells[2];
+	const int c_p = nn_cells[1]; const int c_q = nn_cells[3];
+	/*std::cout << "BEFORE\n";
+	g->cell(c_p).outputVertices(); g->cell(c_p).outputEdgeVertices();	
+	g->cell(c_q).outputVertices(); g->cell(c_q).outputEdgeVertices();*/
 
-	std::cout << "vertex: " << id << '\n';
-	std::vector<int> contact_order = orderCellContacts();
-	int c_a = contact_order[0]; int c_b = contact_order[2];
-	int c_p = contact_order[1]; int c_q = contact_order[3];
-	
-	std::cout << "A, B, BEFORE:\n";
-	g->cell(c_a).outputVertices(); g->cell(c_b).outputVertices();
-	std::cout << '\n';
-	std::cout << "P, Q, BEFORE:\n";
-	g->cell(c_p).outputVertices(); g->cell(c_q).outputVertices();
-	std::cout << '\n';
+	const std::vector<int>& vertices_p = g->cell(c_p).Vertices();
+	auto it_id = std::find(vertices_p.begin(), vertices_p.end(), id);
+	int i = std::distance(vertices_p.begin(), it_id);
+	/*std::cout << "MIDDLE\n";
+	g->cell(c_p).outputVertices(); g->cell(c_p).outputEdgeVertices();
+	g->cell(c_q).outputVertices(); g->cell(c_q).outputEdgeVertices();*/
 
-	//it_x points to this vertex, it_x1 the vertex before and it_x2 the vertex after
-	std::vector<int>::const_iterator it_a, it_a1, it_a2, it_b, it_b1, it_b2;	
-	auto vertexIterators = [this](const int c_x, std::vector<int>::const_iterator& it_x, std::vector<int>::const_iterator& it_x1, std::vector<int>::const_iterator& it_x2)
+	int v_a, v_b; //new vertices
+	auto updateAB = [this](const int c_x, int& v_x)
 	{
-		const std::vector<int>& vertices = g->cell(c_x).Vertices();
-		it_x = std::find(vertices.begin(), vertices.end(), id);
-		if (it_x == vertices.begin()) it_x1 = vertices.end()-1;
-		else it_x1 = it_x-1;
-		it_x2 = it_x + ((vertices.size()+1) % vertices.size());
-	};	
-	vertexIterators(c_a, it_a, it_a1, it_a2); vertexIterators(c_b, it_b, it_b1, it_b2);
- 	
-	//midpoints of two edges connected to this vertex for cells a and b
-	Point a = CGAL::midpoint(g->vert(*it_a1).r(), g->vert(*it_a2).r());
-	Point b = CGAL::midpoint(g->vert(*it_b1).r(), g->vert(*it_b2).r());
-	int v_a = g->createVertex(a); int v_b = g->createVertex(b);
-	std::cout << "v_a: " << v_a << " v_b: " << v_b << '\n';
-	
-	auto updateEdgeVertices = [this](const int c_x, const int v_x, std::vector<int>::const_iterator& it_x, std::vector<int>::const_iterator& it_x1)
-	{
-		const std::vector<int>& vertices = g->cell(c_x).Vertices();
-		int i = std::distance(vertices.begin(), it_x);
-		int i1 = std::distance(vertices.begin(), it_x1);
-		
-		const std::vector<int>& edges = g->cell(c_x).Edges(); 	//need to check that edges and vertices have same starting point after cell division
-		g->edge(edges[i]).swapVertex(id, v_x);
-		g->edge(edges[i1]).swapVertex(id, v_x);				
+		//find position of and create vertex
+		g->cell(c_x).calcR_0();
+		Vec vec_x = g->cell(c_x).r_0() - r_;
+		Point x = r_ + 0.1*vec_x;
+		v_x = g->createVertex(x);
+
+		//attatch relevent edges to vertex
+		for (int e : g->cell(c_x).Edges()) g->edge(e).swapVertex_rep(id, v_x);
+		if (!(g->cell(c_x).valid())) g->cell(c_x).rotateVertices();
 	};
-	addEdgeContact(-1); //temporary to prevent this vertex from being destroyed, there is no edge -1
-	updateEdgeVertices(c_a, v_a, it_a, it_a1); updateEdgeVertices(c_b, v_b, it_b, it_b1);
+	updateAB(c_a, v_a); updateAB(c_b, v_b);
 
-	int e_new = g->createEdge(v_a, v_b);
-	int j_p, j_q;
-	//update vertices and edges for cells p and q
-	auto updateVerticesEdges = [this, v_a, v_b, e_new](const int c_x, int& j_x)
+	//edge that vertex is split into
+	const int e_new = g->createEdge(v_a, v_b);
+
+	//update edges for cells p, q
+	auto updateEdges = [this, c_a, c_b, v_a, v_b, e_new](const int c_x)
+	{
+		const std::vector<int>& vertices_c_x = g->cell(c_x).Vertices();
+		const std::vector<int>& edges_c_x = g->cell(c_x).Edges();
+		for (int i = 0; i < edges_c_x.size(); i++)
+		{
+			if (g->edge(edges_c_x[i]).hasVertex(v_a) && g->edge(edges_c_x[(i+1)%edges_c_x.size()]).hasVertex(v_b))
+			{
+				g->cellNewEdge(c_x,e_new, i+1);
+				break;
+			}
+			else if (g->edge(edges_c_x[i]).hasVertex(v_b) && g->edge(edges_c_x[(i+1)%edges_c_x.size()]).hasVertex(v_a))
+			{
+				g->cellNewEdge(c_x,e_new, i+1);
+				break;
+			}
+		}		
+	};
+	updateEdges(c_p); updateEdges(c_q);
+	
+	auto updateVertices = [this, c_a, c_b, v_a, v_b, e_new](const int c_x, bool before)
 	{
 		const std::vector<int>& vertices = g->cell(c_x).Vertices();
-		const std::vector<int>& edges = g->cell(c_x).Edges(); 
-		//find edge between cell A and cell P etc
-		int i_a, i_b;
-		for (int i = 0; i < edges.size(); i++)
-		{
-			if (g->edge(edges[i]).hasVertex(v_a)) i_a = i;
-			if (g->edge(edges[i]).hasVertex(v_b)) i_b = i;
-		}
-		if (i_a < i_b && i_b != edges.size()-1)  		j_x = i_b;
-		else if (i_a < i_b && (i_b == edges.size()-1) )	j_x = 0;
-		else if (i_b < i_a && (i_a != edges.size()-1) )	j_x = i_a;
-		else if (i_b < i_a && (i_a == edges.size()-1) )	j_x = 0;
-		g->cellNewEdge(c_x, e_new, j_x);	
-		
-		
 		std::vector<int>::const_iterator it_va = std::find(vertices.begin(), vertices.end(), v_a);
-		std::vector<int>::const_iterator it_vb = std::find(vertices.begin(), vertices.end(), v_b);
-		int i;
-		if (it_va == vertices.end()) //v_a missing from vertices
+		
+		if (it_va != vertices.end())
 		{
-			if (g->edge(edges[(j_x+1)%edges.size()]).hasVertex(v_a)) i = (j_x+1)%edges.size();
-			else i = (j_x+edges.size()-1)%edges.size();
-			g->cellNewVertex(c_x, v_a, i);
+			int i = std::distance(vertices.begin(), it_va);
+			if (before) g->cellNewVertex(c_x, v_b, i);
+			else g->cellNewVertex(c_x, v_b, i+1);
+			while (!(g->cell(c_x).valid())) g->cell(c_x).rotateVertices();
 		}
-		else if (it_vb == vertices.end()) //v_b missing from vertices
-		{
-			if (g->edge(edges[(j_x+1)%edges.size()]).hasVertex(v_b)) i = (j_x+1)%edges.size();
-			else i = (j_x+edges.size()-1)%edges.size();
-			g->cellNewVertex(c_x, v_b, i);
-		}			
-	};	
-	updateVerticesEdges(c_p, j_p); updateVerticesEdges(c_q, j_q);
+	};
+	updateVertices(c_p, true); updateVertices(c_q, false);
+	/*if (!(g->cell(c_a).valid())) { std::cout << "a invalid\n"; std::cin.get(); }
+	if (!(g->cell(c_b).valid())) { std::cout << "b invalid\n"; std::cin.get(); }
+	if (!(g->cell(c_p).valid())) { std::cout << "p invalid\n"; std::cin.get(); }
+	if (!(g->cell(c_q).valid())) { std::cout << "q invalid\n"; std::cin.get(); }
 	
-	std::cout << "A, B, AFTER:\n";
-	g->cell(c_a).outputVertices(); g->cell(c_b).outputVertices();
-	std::cout << '\n';
-	std::cout << "P, Q, AFTER:\n";
-	g->cell(c_p).outputVertices(); g->cell(c_q).outputVertices();
-	g->cell(c_p).outputEdgeVertices(); g->cell(c_q).outputEdgeVertices();
-	std::cout << '\n';
-
-	removeEdgeContact(-1);
-}*/
-
-
-void Vertex::T1()
-{
-	
+	std::cout << "END\n";
+	g->cell(c_p).outputVertices(); g->cell(c_p).outputEdgeVertices(); 
+	g->cell(c_q).outputVertices(); g->cell(c_q).outputEdgeVertices();*/
+	g->destroyVertex(id);
 }
 
 

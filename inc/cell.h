@@ -21,7 +21,6 @@ private:
     std::vector<int> vertices;
     std::vector<int> edges;
     std::vector<int> nearest_neighbours;
-    std::vector<bool> edge_directions;
 
     Point r_0_;
     double A_; double S_; //cell area, area sign (+1 or -1)
@@ -38,7 +37,7 @@ private:
     std::vector<int> nearestNeighbours();
     
 public:
-    Cell(Global* g, std::vector<int>& vertices, std::vector<std::pair<int,int>>& edges);
+    Cell(Global* g, std::vector<int>& vertices, std::vector<int>& edges);
     
     void outputVertices() const;
     void outputEdges() const;

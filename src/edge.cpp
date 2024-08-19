@@ -27,7 +27,7 @@ void Edge::removeCellJunction(int cell_id)
 
 const bool Edge::hasVertex(int v) const { return (v == v_1 || v == v_2); }
 
-bool Edge::swapVertex(int v_old, int v_new)
+bool Edge::swapVertex_rep(int v_old, int v_new)
 {
 	if (v_old == v_1) 
 	{
@@ -56,4 +56,17 @@ void Edge::calcT_l()
 	T_l_ = T_l_0;
 	for (int c: cell_junctions) T_l_ += k_L*g->cell(c).L();
 }
+
+
+void Edge::T1merge()
+{
+	Point p = CGAL::midpoint(g->vert(v_1).r(), g->vert(v_2).r());
+	const int v = g->createVertex(p);
+
+	
+	
+}
+
+
+
 
