@@ -7,6 +7,8 @@
 #include "global.h"
 class Global;
 
+#include "parameters.h"
+
 class Edge
 {
 private:

@@ -7,12 +7,14 @@
 #include <ctime>
 #include <chrono>
 
-#include "functions.h"
-#include "global.h"
 
+#include "global.h"
 #include "vertex.h"
 #include "edge.h"
 #include "cell.h"
+
+#include "functions.h"
+#include "parameters.h"
 
 bool doughnut(const Point& p) { return p.x()*p.x() + p.y()*p.y() > 0.03 && p.x()*p.x() + p.y()*p.y() < 0.25; }
 bool square(const Point& p) { return std::fabs(p.x()) < 0.5 && std::fabs(p.y()) < 0.5; }
@@ -22,9 +24,9 @@ int main()
 {
 	Global& global = Global::get();
 	
-    std::vector<Point> points; points.reserve(cell_count);
+    std::vector<Point> points; points.reserve(param::CELL_COUNT);
     //for (int i = 0; i < cell_count; i++) { points.push_back( Point( ((static_cast<double>(std::rand())/RAND_MAX)-0.5), ((static_cast<double>(std::rand())/RAND_MAX)-0.5) ) ); }	
-	int k = std::sqrt(cell_count);
+	int k = std::sqrt(param::CELL_COUNT);
 	for (int i = -k/2; i < k/2; i++)
 	{
 		for (int j = -k/2; j < k/2; j++)
@@ -47,7 +49,7 @@ int main()
 
     std::cout << "\nPRESS ENTER TO RUN SIMULATION"; std::cin.get();
     auto t_start2 = std::chrono::high_resolution_clock::now();
-    runSimulation(global, timesteps);
+    runSimulation(global, 1000);
     auto t_end2 = std::chrono::high_resolution_clock::now();
 
     std::cout << "SIMULATION RAN IN " << std::chrono::duration<double, std::milli>(t_end2 - t_start2).count()/1000 << "s\n";

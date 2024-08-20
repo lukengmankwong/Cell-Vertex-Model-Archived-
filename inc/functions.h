@@ -6,9 +6,8 @@
 #include <string>
 #include <fstream>
 
-#include "libraries.h"
 #include "global.h"
-
+#include "libraries.h"
 #include "vertex.h"
 #include "edge.h"
 #include "cell.h"

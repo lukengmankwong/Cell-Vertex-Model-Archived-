@@ -53,8 +53,8 @@ void Edge::calcLength() { l_ = std::sqrt((g->vert(v_1).r()-g->vert(v_2).r()).squ
 
 void Edge::calcT_l()
 {
-	T_l_ = T_l_0;
-	for (int c: cell_junctions) T_l_ += k_L*g->cell(c).L();
+	T_l_ = param::LAMBDA;
+	for (int c: cell_junctions) T_l_ += param::GAMMA*g->cell(c).L();
 }
 
 
@@ -62,6 +62,7 @@ void Edge::T1merge()
 {
 	Point p = CGAL::midpoint(g->vert(v_1).r(), g->vert(v_2).r());
 	const int v = g->createVertex(p);
+	
 
 	
 	

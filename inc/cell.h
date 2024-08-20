@@ -11,6 +11,8 @@
 #include "global.h"
 class Global;
 
+#include "parameters.h"
+
 
 class Cell
 {

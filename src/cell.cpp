@@ -333,7 +333,7 @@ void Cell::calcL()
 	for (int e : edges) L_ += g->edge(e).l();
 }
 
-void Cell::calcT_A() { T_A_ = k_A*(A_-A_0); }
+void Cell::calcT_A() { T_A_ = param::K_a*(A_-param::A_0); }
 
 std::vector<int> Cell::nearestNeighbours()
 {
@@ -371,7 +371,7 @@ void Cell::calcm()
 	std::vector<int> nn_cells = nearestNeighbours(); int n = nn_cells.size();
 	double w = 0;
 	for (int i = 0; i < nn_cells.size(); i++) w += g->D_angle(nn_cells[i], nn_cells[(i+1)%n]);
-	m_ = 0.5*w/pi;
+	m_ = w*param::HALF_INV_PI;
 }
 
 

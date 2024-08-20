@@ -1,30 +1,10 @@
 #include "global.h"
 
-//constants
-
-const double pi = 3.14159265358979323846264338;
-
-//parameters
-const int cell_count = 20000;
-
-const double dt = 1e-8;
-const int timesteps = 1000;
-
-const double A_0 = 1.0/cell_count;
-
-const double k_A = 10;
-const double k_L = 2;
-const double T_l_0 = 1;
-
-const double a = 1;
-
-
-//Global class
 
 Global::Global() : v_c_(0), e_c_(0), c_c_(0), timestep(0)
 {
-	cell_defects.reserve(timesteps);
-	vertex_defects.reserve(timesteps);
+	cell_defects.reserve(1000);
+	vertex_defects.reserve(1000);
 }
 Global::~Global() {}
 
@@ -127,7 +107,7 @@ void Global::extrusion()
 	std::vector<int> small_cells;
 	for (const auto& cell : c_map)
 	{
-		if (cell.second.A() < 0.2*A_0)
+		if (cell.second.A() < 0.2*param::A_0)
 		{
 			const std::vector<int>& vertices = c_map.at(cell.first).Vertices();
 			int i = 0; bool contact = false;
@@ -151,7 +131,7 @@ void Global::division()
 	std::vector<int> large_cells;
 	for (const auto& cell : c_map)
 	{
-		if (cell.second.A() > 2.1*A_0)
+		if (cell.second.A() > 2.1*param::A_0)
 		{
 			const std::vector<int>& vertices = c_map.at(cell.first).Vertices();
 			int i = 0; bool contact = false;

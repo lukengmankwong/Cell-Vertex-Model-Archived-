@@ -55,7 +55,7 @@ Vec Vertex::calcLineForce()
 }
 
 void Vertex::calcForce() { force_ += calcSurfaceForce()+calcLineForce(); }
-void Vertex::applyForce() { r_ += a*dt*force_; }
+void Vertex::applyForce() { r_ += param::a*param::dt*force_; }
 
 
 std::vector<int> Vertex::orderCellContacts()
@@ -181,7 +181,7 @@ void Vertex::calcm()
 	std::vector<int> nn_cells = orderCellContacts(); int n = nn_cells.size();
 	double w = 0;
 	for (int i = 0; i < nn_cells.size(); i++) w += g->D_angle(nn_cells[i], nn_cells[(i+1)%n]);
-	m_ = 0.5*w/pi;
+	m_ = w*param::HALF_INV_PI;
 }
 
 

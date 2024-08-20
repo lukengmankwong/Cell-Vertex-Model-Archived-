@@ -15,28 +15,11 @@ typedef CGAL::Point_2<K>												  Point;
 #include "vertex.h"
 #include "edge.h"
 #include "cell.h"
-
 class Vertex;
 class Edge;
 class Cell;
 
-//constants
-
-extern const double pi;
-
-//parameters
-extern const int cell_count;
-
-extern const double dt;
-extern const int timesteps;
-
-extern const double A_0; //characteristic cell area
-
-extern const double k_A; //spring constant for surface tension
-extern const double k_L; //spring constant for edge tension
-extern const double T_l_0; //independent edge tension
-
-extern const double a;
+#include "parameters.h"
 
 class Global //singleton
 {
