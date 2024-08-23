@@ -1,11 +1,11 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
-#include <utility>
 #include <unordered_set>
+#include <vector>
 
-#include "global.h"
-class Global;
+#include "tissue.h"
+class Tissue;
 
 #include "parameters.h"
 
@@ -13,7 +13,7 @@ class Vertex
 {
 private:
 
-	Global* g;
+	Tissue* T;
     const int id;
     Point r_;
     Vec force_;
@@ -25,11 +25,15 @@ private:
     Vec calcSurfaceForce();
     Vec calcLineForce();
     
+    int not_boundary_cell;
+    
     std::vector<int> orderCellContacts();
 
 public:
-    Vertex(Global* g, Point r);
+    
+    Vertex(Tissue* T, Point r);
     bool operator==(const Vertex& other) const;
+    bool onBoundaryCell();
     
     const Point& r() const;
     const double m() const;

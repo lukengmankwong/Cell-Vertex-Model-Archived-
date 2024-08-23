@@ -1,17 +1,9 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
+#ifndef TISSUE_H
+#define TISSUE_H
 
-#include <utility>
 #include <unordered_map>
 
-#include <CGAL/Kernel/global_functions.h>
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Point_2.h>
-#include <CGAL/Vector_2.h>
-typedef CGAL::Exact_predicates_inexact_constructions_kernel                   K;
-typedef CGAL::Vector_2<K>                                                   Vec;
-typedef CGAL::Point_2<K>												  Point;
-
+#include "libraries.h"
 #include "vertex.h"
 #include "edge.h"
 #include "cell.h"
@@ -20,13 +12,11 @@ class Edge;
 class Cell;
 
 #include "parameters.h"
+#include "functions.h"
 
-class Global //singleton
+class Tissue
 {
 private:
-	
-	Global();
-	~Global();
 
 	std::unordered_map<int, Vertex> v_map; int v_c_;
 	std::unordered_map<int, Edge> e_map; int e_c_;
@@ -38,27 +28,21 @@ private:
 	
 	void extrusion();
 	void division();
+	void transitions();
+	void T1();
+	void addDefects();
 
 	
 public:
-	void T1();
-	Global(const Global&) = delete;
-    Global& operator=(const Global&) = delete;
-    static Global& get() 
-    {
-        static Global instance;
-        return instance;
-    }
+	Tissue();
+	~Tissue();
     
-    void nextStep();
-    const int Step() const;
-    void addDefects();
     const std::vector<int>& cellStepDefects() const;
     const std::vector<int>& vertexStepDefects() const;
     
-    std::unordered_map<int, Vertex>& vertexMap();
-    std::unordered_map<int, Edge>& edgeMap();
-    std::unordered_map<int, Cell>& cellMap();
+    const std::unordered_map<int, Vertex>& vertexMap() const;
+    const std::unordered_map<int, Edge>& edgeMap() const ;
+    const std::unordered_map<int, Cell>& cellMap() const;
     
     Vertex& vert(int v);
     Edge& edge(int e);
@@ -85,11 +69,10 @@ public:
 	void destroyCell(int c);
 	
 	const bool commonEdge(int c1, int c2) const;
-	
-	void transitions();
-	void run();
-	
 	const double D_angle(int c_i, int c_j) const; 
+	
+	void run(int max_timestep);
+	
 };
 
-#endif // GLOBALS_H
+#endif // TISSUE_H

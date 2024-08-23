@@ -8,8 +8,8 @@
 #include <array>
 
 #include <CGAL/Origin.h>
-#include "global.h"
-class Global;
+#include "tissue.h"
+class Tissue;
 
 #include "parameters.h"
 
@@ -18,7 +18,7 @@ class Cell
 {
 private:
 
-	Global* g;
+	Tissue* T;
 	const int id;
     std::vector<int> vertices;
     std::vector<int> edges;
@@ -39,7 +39,7 @@ private:
     std::vector<int> nearestNeighbours();
     
 public:
-    Cell(Global* g, std::vector<int>& vertices, std::vector<int>& edges);
+    Cell(Tissue* T, std::vector<int>& vertices, std::vector<int>& edges);
     
     void outputVertices() const;
     void outputEdges() const;

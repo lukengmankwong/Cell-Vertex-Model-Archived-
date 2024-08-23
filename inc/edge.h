@@ -2,10 +2,11 @@
 #define EDGE_H
 
 #include <cmath>
-#include <utility>
+#include <vector>
+#include <unordered_set>
 
-#include "global.h"
-class Global;
+#include "tissue.h"
+class Tissue;
 
 #include "parameters.h"
 
@@ -13,7 +14,7 @@ class Edge
 {
 private:
 	
-	Global* g;
+	Tissue* T;
     const int id;
     int v_1, v_2;
     double l_; //length
@@ -22,7 +23,7 @@ private:
     std::unordered_set<int> cell_junctions;
   
 public:
-    Edge(Global* g, int v1, int v2);
+    Edge(Tissue* T, int v1, int v2);
     bool operator==(const Edge& other) const;
 
     const int v1() const; const int v2() const;
@@ -34,12 +35,14 @@ public:
     void removeCellJunction(int cell_id);
     
     const bool hasVertex(int v) const;
-    bool swapVertex_rep(int v_old, int v_new); //changes cell vertices
+    bool swapVertex(int v_old, int v_new); //changes cell vertices
+    bool swapVertex_noedit(int v_old, int v_new);
     
     void calcLength();
     void calcT_l();
     
     void T1merge();
+    void T1();
 
 };
 
