@@ -15,32 +15,32 @@
 #include "parameters.h"
 
 bool doughnut(const Point& p) { return p.x()*p.x() + p.y()*p.y() > 0.03 && p.x()*p.x() + p.y()*p.y() < 0.25; }
-bool square(const Point& p) { return std::fabs(p.x()) < 35 && std::fabs(p.y()) < 35; }
-bool square2(const Point& p) { return p.x() > 0 && p.x() < 70 && p.y() > 0 && p.y() < 70; }
+bool square(const Point& p) { return std::fabs(p.x()) < 15 && std::fabs(p.y()) < 15; }
 bool unbound(const Point& p) { return true; }
+bool circle(const Point& p) { return (p.x()-0)*(p.x()-0) + (p.y()-0)*(p.y()-0) < 700; }
 
 int main() 
 {
 	
 	Tissue tissue = Tissue();
-	int cell_count = 5000;
+	int cell_count = 2800;
 	
     std::vector<Point> points; points.reserve(cell_count);
-    //for (int i = 0; i < 5000; i++) { points.push_back( Point( 70*((static_cast<double>(std::rand())/RAND_MAX)-0.5), 70*((static_cast<double>(std::rand())/RAND_MAX)-0.5) ) ); }	
-	int k = std::sqrt(cell_count);
-	for (int i = 0; i < k; i++)
+    for (int i = 0; i < 1000; i++) { points.push_back( Point( 30*((static_cast<double>(std::rand())/RAND_MAX)-0.5), 30*((static_cast<double>(std::rand())/RAND_MAX)-0.5) ) ); }	
+	/*int k = std::sqrt(cell_count);
+	for (int i = -k/2; i < k/2; i++)
 	{
-		for (int j = 0; j < k; j++)
+		for (int j = -k/2; j < k/2; j++)
 		{
-			Point p(i+0.5*((static_cast<double>(std::rand())/RAND_MAX)-0.5), j+0.5*(i%2)+0.5*((static_cast<double>(std::rand())/RAND_MAX)-0.5));
+			Point p(i+0.25*((static_cast<double>(std::rand())/RAND_MAX)-0.5), j+0.5*(i%2)+0.25*((static_cast<double>(std::rand())/RAND_MAX)-0.5));
 			//Point p(i, j+0.5*(i%2));
 			points.push_back(p);
 		}
-	}
+	}*/
 	
-	/*for (int i = 0; i*i < param::CELL_COUNT; i++)
+	/*for (int i = 0; i*i < cell_count; i++)
 	{
-		for (int j = 0; j*j < param::CELL_COUNT; j++)
+		for (int j = 0; j*j < cell_count; j++)
 		{
 			Point p(i, j);
 			points.push_back(p);
@@ -53,14 +53,14 @@ int main()
 
 
 	auto t_start1 = std::chrono::high_resolution_clock::now();
-    getInitialData(vd, tissue, square2);
+    getInitialData(vd, tissue, square);
     auto t_end1 = std::chrono::high_resolution_clock::now();
     //outputData(Tissue);
     std::cout << "DATA COLLECTED IN " << std::chrono::duration<double, std::milli>(t_end1 - t_start1).count()/1000 << "s\n";
 
     std::cout << "\nPRESS ENTER TO RUN SIMULATION"; std::cin.get();
     auto t_start2 = std::chrono::high_resolution_clock::now();
-    tissue.run(1000);
+    tissue.run(2000);
     auto t_end2 = std::chrono::high_resolution_clock::now();
 
     std::cout << "SIMULATION RAN IN " << std::chrono::duration<double, std::milli>(t_end2 - t_start2).count()/1000 << "s\n";

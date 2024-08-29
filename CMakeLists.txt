@@ -6,7 +6,7 @@ include_directories(${PROJECT_SOURCE_DIR}/inc)
 
 set(SOURCES
     src/main.cpp
-    src/global.cpp
+    src/tissue.cpp
     src/functions.cpp
     src/vertex.cpp
     src/edge.cpp

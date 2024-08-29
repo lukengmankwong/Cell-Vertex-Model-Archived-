@@ -3,8 +3,7 @@
 
 Tissue::Tissue() : v_c_(0), e_c_(0), c_c_(0), timestep(0)
 {
-	cell_defects.reserve(1000);
-	vertex_defects.reserve(1000);
+
 }
 Tissue::~Tissue() {}
 
@@ -14,16 +13,16 @@ void Tissue::addDefects()
 	std::vector<int> cell_step_defects;
 	for (const auto& cell : c_map) { if (std::fabs(cell.second.m()-0.5) < 1e-4 || std::fabs(cell.second.m()+0.5) < 1e-4 
 		|| std::fabs(cell.second.m()-1) < 1e-4 || std::fabs(cell.second.m()+1) < 1e-4) cell_step_defects.push_back(cell.first); }
-	cell_defects.push_back(cell_step_defects);
+	cell_defects = cell_step_defects;
 	
 	std::vector<int> vertex_step_defects;
-	for (const auto& vertex : v_map) { if (std::fabs(vertex.second.m()-0.5) < 1e-4 || std::fabs(vertex.second.m()+0.5) < 1e-4
-		|| std::fabs(vertex.second.m()-1) < 1e-4 || std::fabs(vertex.second.m()+1) < 1e-4) vertex_step_defects.push_back(vertex.first); }
-	vertex_defects.push_back(vertex_step_defects);
+	for (const auto& vertex : v_map) { if (std::fabs(vertex.second.m()-0.5) < 1e-2 || std::fabs(vertex.second.m()+0.5) < 1e-2
+		|| std::fabs(vertex.second.m()-1) < 1e-2 || std::fabs(vertex.second.m()+1) < 1e-2) vertex_step_defects.push_back(vertex.first); }
+	vertex_defects = vertex_step_defects;
 }
 
-const std::vector<int>& Tissue::cellStepDefects() const { return cell_defects[timestep]; }
-const std::vector<int>& Tissue::vertexStepDefects() const { return vertex_defects[timestep]; }
+const std::vector<int>& Tissue::cellStepDefects() const { return cell_defects; }
+const std::vector<int>& Tissue::vertexStepDefects() const { return vertex_defects; }
 
 const std::unordered_map<int, Vertex>& Tissue::vertexMap() const { return v_map; }
 const std::unordered_map<int, Edge>& Tissue::edgeMap() const { return e_map; }
@@ -153,7 +152,7 @@ void Tissue::T1()
 {
 	std::vector<int> short_edges;
 	for (const auto& edge : e_map) if ( edge.second.l() < param::l_min ) { short_edges.push_back(edge.first); }
-	for (int e : short_edges) e_map.at(e).T1merge();
+	//for (int e : short_edges) e_map.at(e).T1merge();
 	std::vector<int> fourfold_vertices;
 	for (const auto& vertex : v_map) if (vertex.second.edgeContacts().size() == 4) fourfold_vertices.push_back(vertex.first);
 	for (int v : fourfold_vertices){ v_map.at(v).T1split(); }
@@ -174,9 +173,12 @@ const double Tissue::D_angle(int c_i, int c_j) const
 	return std::asin( (Z_i*X_j-X_i*Z_j) / (S_i*S_j) );
 }
 
+void Tissue::cellFindNeighbours() { for (auto& cell : c_map) cell.second.findNeighbours(); }
+
 
 void Tissue::run(int max_timestep)
 {
+	for (auto& vertex : v_map) vertex.second.onBoundaryCell();
 	while (timestep < max_timestep)
 	{
 		transitions();
@@ -189,19 +191,22 @@ void Tissue::run(int max_timestep)
 			cell.second.calcT_A();
 			cell.second.calcG();
 		}
-		//for (auto& cell : c_map) 	{ cell.second.calcm(); }
-		//for (auto& vertex : v_map) 	{ vertex.second.calcm(); }
-		//addDefects();
 		
 		for (auto& edge : e_map)	{ edge.second.calcT_l(); }		
 		for (auto& vertex : v_map) 	{ vertex.second.calcForce(); }		
         for (auto& vertex : v_map) 	{ vertex.second.applyForce(); }
         
-		writeCellsFile(this, "cells" + std::to_string(timestep) + ".vtk");
-        //writeDirectorsFile(this, "directors" + std::to_string(timestep) + ".vtk");
-		//writeCellDefectsFile(this, "cell defects" + std::to_string(timestep) + ".vtk");
-        //writeVertexDefectsFile(this, "vertex defects" + std::to_string(timestep) + ".vtk");
-        
+		if (timestep % 10 == 0)
+		{
+			//for (auto& cell : c_map) 	{ cell.second.calcm(); }
+			//for (auto& vertex : v_map) 	{ vertex.second.calcm(); }
+			//addDefects();
+			writeCellsFile(this, "cells" + std::to_string(timestep) + ".vtk");
+			writeDirectorsFile(this, "directors" + std::to_string(timestep) + ".vtk");
+			//writeCellDefectsFile(this, "cell defects" + std::to_string(timestep) + ".vtk");
+			//writeVertexDefectsFile(this, "vertex defects" + std::to_string(timestep) + ".vtk");
+		
+		}
         T1();
         timestep++;	
 	}

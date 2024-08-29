@@ -22,7 +22,7 @@ private:
 	const int id;
     std::vector<int> vertices;
     std::vector<int> edges;
-    std::vector<int> nearest_neighbours;
+    std::vector<int> neighbours;
 
     Point r_0_;
     double A_; double S_; //cell area, area sign (+1 or -1)
@@ -36,7 +36,6 @@ private:
     double m_; //winding number around cell nearest neighbors
     
     const int longestEdge_i() const;
-    std::vector<int> nearestNeighbours();
     
 public:
     Cell(Tissue* T, std::vector<int>& vertices, std::vector<int>& edges);
@@ -78,6 +77,7 @@ public:
     void calcm();
     
     bool valid();
+    void findNeighbours();
 
 };
 

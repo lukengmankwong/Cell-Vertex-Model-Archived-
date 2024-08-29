@@ -23,8 +23,8 @@ private:
 	std::unordered_map<int, Cell> c_map; int c_c_;
 	
 	int timestep;
-	std::vector<std::vector<int>> cell_defects;
-	std::vector<std::vector<int>> vertex_defects;
+	std::vector<int> cell_defects;
+	std::vector<int> vertex_defects;
 	
 	void extrusion();
 	void division();
@@ -71,6 +71,7 @@ public:
 	const bool commonEdge(int c1, int c2) const;
 	const double D_angle(int c_i, int c_j) const; 
 	
+	void cellFindNeighbours();
 	void run(int max_timestep);
 	
 };

@@ -65,38 +65,23 @@ Vec Vertex::calcLineForce()
 }
 
 void Vertex::calcForce() { force_ += calcSurfaceForce()+calcLineForce(); }
-void Vertex::applyForce() { r_ += not_boundary_cell*param::a*param::dt*force_; }
+void Vertex::applyForce() { r_ += not_boundary_cell*param::a*param::dt*force_ + 100*(1-not_boundary_cell)*param::a*param::dt*Vec(-r_.y(),r_.x()); }
+void Vertex::shearForce() { force_ = Vec(-r_.y(),r_.x()); } //anticlockwise shear
 
 
-std::vector<int> Vertex::orderCellContacts()
+void Vertex::orderCellContacts()
 {
-	std::vector<int> contact_order;
-	for (int c : cell_contacts) { if (T->cell(c).onBoundary()) return contact_order; }
-	contact_order.push_back(*(cell_contacts.begin()));
-	std::unordered_set<int> edge_set = edge_contacts; int i = 0;
-	while (contact_order.size() < cell_contacts.size())
+	std::vector<std::pair<int, double>> contacts;
+	for (int c : cell_contacts) 
 	{
-		for (int e : edge_set)
-		{
-			const std::unordered_set<int>& cell_junctions = T->edge(e).cellJunctions();
-			std::unordered_set<int>::const_iterator c_it = std::find(cell_junctions.begin(), cell_junctions.end(), contact_order[i]);
-			if (c_it != cell_junctions.end())
-			{
-				if (c_it == cell_junctions.begin()) contact_order.push_back(*(std::next(c_it)));
-				else contact_order.push_back(*(cell_junctions.begin()));
-				i++; edge_set.erase(e); break;
-			}
-		}
+		T->cell(c).calcR_0();
+		Vec vec = T->cell(c).r_0()-r_;
+		double theta = std::atan2(vec.y(), vec.x());
+		contacts.push_back({c,theta});
 	}
-	//ensure anticlockwise orientation
-	for (int c : cell_contacts) T->cell(c).calcR_0();
-	double A = 0;
-	for (int i = 0; i < contact_order.size(); i++) 
-	{	A += T->cell(contact_order[i]).r_0().x()*T->cell(contact_order[(i+1)%contact_order.size()]).r_0().y()
-			- T->cell(contact_order[(i+1)%contact_order.size()]).r_0().x()*T->cell(contact_order[i]).r_0().y(); } 
-	if (A < 0) std::reverse(contact_order.begin(), contact_order.end());
-	return contact_order;
-	
+	auto compare = [this](const std::pair<int, double> c1, const std::pair<int, double> c2) { return c1.second < c2.second; };
+	std::sort(contacts.begin(), contacts.end(), compare);
+	cell_contacts_ordered = contacts;
 }
 
 
@@ -107,9 +92,9 @@ void Vertex::T1split()
 	
 	//std::cout << "vertex id: " << id << '\n';
 	//affected cells, a,b change vertex p,q gets new edge
-	std::vector<int> nn_cells = orderCellContacts();
-	const int c_a = nn_cells[0]; const int c_b = nn_cells[2];
-	const int c_p = nn_cells[1]; const int c_q = nn_cells[3];
+	orderCellContacts();
+	const int c_a = cell_contacts_ordered[0].first; const int c_b = cell_contacts_ordered[2].first;
+	const int c_p = cell_contacts_ordered[1].first; const int c_q = cell_contacts_ordered[3].first;
 	/*std::cout << "BEFORE\n";
 	T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();	
 	T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
@@ -183,14 +168,16 @@ void Vertex::T1split()
 	T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices(); 
 	T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
 	T->destroyVertex(id);
+	std::cout << "T1 split\n";
 }
 
 
 void Vertex::calcm()
 {
-	std::vector<int> nn_cells = orderCellContacts(); int n = nn_cells.size();
+	orderCellContacts();
+	int n = cell_contacts.size();
 	double w = 0;
-	for (int i = 0; i < nn_cells.size(); i++) w += T->D_angle(nn_cells[i], nn_cells[(i+1)%n]);
+	for (int i = 0; i < n; i++) w += T->D_angle(cell_contacts_ordered[i].first, cell_contacts_ordered[(i+1)%n].first);
 	m_ = w*boost::math::constants::one_div_two_pi <double>();
 }
 

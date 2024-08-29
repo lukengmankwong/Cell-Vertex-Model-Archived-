@@ -91,12 +91,13 @@ void getInitialData(VD& vd, Tissue& Tissue, bool (*in)(const Point&))
 	}
 	for (const auto& cell : Tissue.cellMap())
 	{
-		if (cell.second.Edges().size() < 3) { cells_to_remove.insert(cell.first); }
+		//if (cell.second.Edges().size() < 3) { cells_to_remove.insert(cell.first); }
 	}
 	for (int c : cells_to_remove) { Tissue.destroyCell(c); }
 	int V = Tissue.vertexMap().size(); int E = Tissue.edgeMap().size(); int C = Tissue.cellMap().size();
 	int Euler = V-E+C;
     std::cout << "V=" << V << "\nE=" << E << "\nC=" << C << "\nV-E+C=" << Euler << '\n';	
+	Tissue.cellFindNeighbours();
 }
 
 

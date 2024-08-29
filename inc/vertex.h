@@ -27,7 +27,8 @@ private:
     
     int not_boundary_cell;
     
-    std::vector<int> orderCellContacts();
+	void orderCellContacts();
+    std::vector<std::pair<int, double>> cell_contacts_ordered;
 
 public:
     
@@ -47,6 +48,7 @@ public:
 
     void calcForce();
     void applyForce();
+    void shearForce();
 
 	void T1split();
 	

@@ -230,15 +230,26 @@ void Cell::divide()
 	int c_p = T->createCell(cell_p_vertices, cell_p_edges);
 	int c_q = T->createCell(cell_q_vertices, cell_q_edges);
 	
+	//std::vector<int> neighbour_copy = neighbours;
 	T->destroyCell(id);
+	//for (int c : neighbour_copy) T->cell(c).findNeighbours();
+	std::cout << "cell divided\n";
 }
 
 void Cell::extrude()
 {
+	
 	//simply destroy cell if it is on a boundary
-	if (onBoundary()) { T->destroyCell(id); return; }
+	if (onBoundary()) 
+	{ 
+		//std::vector<int> neighbours_copy = neighbours;
+		T->destroyCell(id);
+		//for (int c : neighbours_copy) T->cell(c).findNeighbours();
+		return; 
+	}
 	for (int v: vertices) { if (T->vert(v).edgeContacts().size() > 3) return; }
 	
+	//std::vector<int> neighbours_copy = neighbours;
 	calcR_0(); 														//calculate centroid, create vertex at centroid, and detatch cell vertices and edges from cell
 	int v_new = T->createVertex(r_0_);
 	for (int v : vertices) { T->vert(v).removeCellContact(id); }
@@ -264,6 +275,8 @@ void Cell::extrude()
 	
 	vertices = {}; edges = {};
 	T->destroyCell(id);
+	//for (int c : neighbours_copy) T->cell(c).findNeighbours();
+	std::cout << "cell extruded\n";
 }
 
 
@@ -321,42 +334,46 @@ void Cell::calcL()
 
 void Cell::calcT_A() { T_A_ = param::K_a*(A_-param::A_0); }
 
-std::vector<int> Cell::nearestNeighbours()
+void Cell::findNeighbours()
 {
-	std::vector<int> nearest_neighbours;
+	neighbours = {};
 	for (int i = 0; i < vertices.size(); i++)
 	{
 		int v_prev = vertices[(i-1+vertices.size())%vertices.size()];
 		int v = vertices[i];
 		int v_next = vertices[(i+1)%vertices.size()];
-		for (int c : T->vert(v).cellContacts())
+		
+		const std::unordered_set<int>& cell_contacts_prev = T->vert(v_prev).cellContacts();
+		const std::unordered_set<int>& cell_contacts = T->vert(v).cellContacts();
+		const std::unordered_set<int>& cell_contacts_next = T->vert(v_next).cellContacts();
+		size_t n = cell_contacts.size();
+		
+		for (int c : cell_contacts)
 		{
 			if (c != id)
 			{
-				if (T->vert(v).cellContacts().size() <= 3)
+				if (n <= 3)
 				{
-					//look for cell c in next vertex edge contacts
-					auto it_next = std::find(T->vert(v_next).cellContacts().begin(), T->vert(v_next).cellContacts().end(), c);
-					//add c to nearest neighbours if it is not in the next vertex edge contacts
-					if (it_next == T->vert(v_next).cellContacts().end()) { nearest_neighbours.push_back(c); }
+					std::unordered_set<int>::const_iterator it_next = std::find(cell_contacts_next.begin(), cell_contacts_next.end(), c); //look for cell c in next vertex cell contacts
+					if (it_next == cell_contacts_next.end()) neighbours.push_back(c); //add c to nearest neighbours if it is not in the next vertex edge contacts
 				}
 				else 
 				{
-					auto it_prev = std::find(T->vert(v_prev).cellContacts().begin(), T->vert(v_prev).cellContacts().end(), c);
-					auto it_next = std::find(T->vert(v_next).cellContacts().begin(), T->vert(v_next).cellContacts().end(), c);
-					if (it_next == T->vert(v_next).cellContacts().end() && it_prev == T->vert(v_prev).cellContacts().end()) { nearest_neighbours.push_back(c); }
+					std::unordered_set<int>::const_iterator it_prev = std::find(cell_contacts_prev.begin(), cell_contacts_prev.end(), c);
+					std::unordered_set<int>::const_iterator it_next = std::find(cell_contacts_next.begin(), cell_contacts_next.end(), c);
+					if (it_next == cell_contacts_next.end() && it_prev == cell_contacts_prev.end()) neighbours.push_back(c);
 				}
 			}		
 		}
 	}
-	return nearest_neighbours;
 }
 
 void Cell::calcm()
 {
-	std::vector<int> nn_cells = nearestNeighbours(); int n = nn_cells.size();
+	findNeighbours(); 
+	int n = neighbours.size();
 	double w = 0;
-	for (int i = 0; i < nn_cells.size(); i++) w += T->D_angle(nn_cells[i], nn_cells[(i+1)%n]);
+	for (int i = 0; i < n; i++) w += T->D_angle(neighbours[i], neighbours[(i+1)%n]);
 	m_ = w*boost::math::constants::one_div_two_pi <double>();
 }
 
