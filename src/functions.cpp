@@ -190,9 +190,13 @@ void writeCellDefectsFile(Tissue* T, const std::string& filename_cell_defects)
 void writeVertexDefectsFile(Tissue* T, const std::string& filename_vertex_defects)
 {
 	std::ofstream file(filename_vertex_defects);
-    file << "# vtk DataFile Version 3.0\nPoint data\nASCII\nDATASET POLYDATA\n";
+    file << "# vtk DataFile Version 2.0\nPoint data\nASCII\nDATASET POLYDATA\n";
     file << "POINTS " << T->vertexStepDefects().size() << " float\n";
     for (int v : T->vertexStepDefects()) file << T->vert(v).r().x() << " " << T->vert(v).r().y() << " 0\n";
+    
+    file << "VERTICES " << T->vertexStepDefects().size() << " " << 2 * T->vertexStepDefects().size() << "\n";
+    for (int i = 0; i < T->vertexStepDefects().size(); i++) file << "1 " << i << "\n";
+        
     file.close();
 }
 
