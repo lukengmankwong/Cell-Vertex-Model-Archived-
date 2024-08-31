@@ -97,7 +97,8 @@ void getInitialData(VD& vd, Tissue& Tissue, bool (*in)(const Point&))
 	int V = Tissue.vertexMap().size(); int E = Tissue.edgeMap().size(); int C = Tissue.cellMap().size();
 	int Euler = V-E+C;
     std::cout << "V=" << V << "\nE=" << E << "\nC=" << C << "\nV-E+C=" << Euler << '\n';	
-	Tissue.cellFindNeighbours();
+	Tissue.cellsFindNeighbours();
+	Tissue.verticesFindNeighbours();
 }
 
 

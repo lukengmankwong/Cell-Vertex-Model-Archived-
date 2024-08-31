@@ -1,7 +1,11 @@
 #include "vertex.h"
 
 
-Vertex::Vertex(Tissue* T, Point r) : T(T), id(T->v_c()), r_(r), force_(Vec(0,0)) { not_boundary_cell = 1; }
+Vertex::Vertex(Tissue* T, Point r) : T(T), id(T->v_c()), r_(r), force_(Vec(0,0)) 
+{ 
+	not_boundary_cell = 1; 
+	cell_contacts_ordered.reserve(8);
+}
 
 bool Vertex::operator==(const Vertex& other) const { return r_ == other.r_; }
 
@@ -79,8 +83,9 @@ void Vertex::orderCellContacts()
 		double theta = std::atan2(vec.y(), vec.x());
 		contacts.push_back({c,theta});
 	}
-	auto compare = [this](const std::pair<int, double> c1, const std::pair<int, double> c2) { return c1.second < c2.second; };
-	std::sort(contacts.begin(), contacts.end(), compare);
+	
+	std::sort(contacts.begin(), contacts.end(), 
+		[](const std::pair<int, double>& c1, const std::pair<int, double>& c2) { return c1.second < c2.second; });
 	cell_contacts_ordered = contacts;
 }
 
@@ -168,14 +173,16 @@ void Vertex::T1split()
 	T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices(); 
 	T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
 	T->destroyVertex(id);
+	T->vert(v_a).orderCellContacts(); T->vert(v_b).orderCellContacts();
+	for (int c : T->vert(v_a).cellContacts()) T->cell(c).findNeighbours(); for (int c : T->vert(v_b).cellContacts()) T->cell(c).findNeighbours();
 	std::cout << "T1 split\n";
 }
 
 
 void Vertex::calcm()
 {
-	orderCellContacts();
-	int n = cell_contacts.size();
+	//cell order already known
+	size_t n = cell_contacts.size();
 	double w = 0;
 	for (int i = 0; i < n; i++) w += T->D_angle(cell_contacts_ordered[i].first, cell_contacts_ordered[(i+1)%n].first);
 	m_ = w*boost::math::constants::one_div_two_pi <double>();

@@ -46,6 +46,7 @@ public:
     
     const std::vector<int>& Vertices() const;
     const std::vector<int>& Edges() const;
+    const std::vector<int>& Neighbours() const;
     const Point& r_0() const;
     const double A() const; 
     const double S() const;

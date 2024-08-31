@@ -14,7 +14,7 @@ namespace param
 	constexpr double LAMBDA = LAMBDA_*K_a*std::powf(A_0, 1.5);
 	constexpr double GAMMA 	= GAMMA_*K_a*A_0;
 
-	constexpr double a = 0.5;
+	constexpr double a = 0.2;
 	
 	constexpr double l_min = 0.05*std::sqrt(A_0);
 	constexpr double A_min = 0.2*A_0;

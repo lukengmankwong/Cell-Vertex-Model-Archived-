@@ -71,7 +71,8 @@ public:
 	const bool commonEdge(int c1, int c2) const;
 	const double D_angle(int c_i, int c_j) const; 
 	
-	void cellFindNeighbours();
+	void cellsFindNeighbours();
+	void verticesFindNeighbours();
 	void run(int max_timestep);
 	
 };

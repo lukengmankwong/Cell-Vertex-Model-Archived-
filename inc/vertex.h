@@ -27,7 +27,6 @@ private:
     
     int not_boundary_cell;
     
-	void orderCellContacts();
     std::vector<std::pair<int, double>> cell_contacts_ordered;
 
 public:
@@ -52,6 +51,7 @@ public:
 
 	void T1split();
 	
+	void orderCellContacts();
 	void calcm();
 	
 };

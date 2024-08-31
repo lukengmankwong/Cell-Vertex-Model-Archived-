@@ -4,6 +4,9 @@
 Cell::Cell(Tissue* T, std::vector<int>& vertices, std::vector<int>& edges) : 
 	T(T), id(T->c_c()), vertices(vertices), edges(edges)
 {	
+	vertices.reserve(16);
+	edges.reserve(16);
+	neighbours.reserve(16);
 	A_ = 0;
 	for (int i = 0; i < vertices.size(); i++) {
 		A_ += T->vert(vertices[i]).r().x()*T->vert(vertices[(i+1)%vertices.size()]).r().y()
@@ -33,8 +36,9 @@ void Cell::outputEdgeVertices() const
 }
 
 
-const std::vector<int>& Cell::Vertices() const { return vertices; }
-const std::vector<int>& Cell::Edges() 	 const { return edges; }
+const std::vector<int>& Cell::Vertices()	const { return vertices; }
+const std::vector<int>& Cell::Edges() 	 	const { return edges; }
+const std::vector<int>& Cell::Neighbours()	const { return neighbours; }
 
 const Point& 	Cell::r_0() const { return r_0_; }
 const double 	Cell::A() 	const { return S_*A_; }
@@ -230,9 +234,13 @@ void Cell::divide()
 	int c_p = T->createCell(cell_p_vertices, cell_p_edges);
 	int c_q = T->createCell(cell_q_vertices, cell_q_edges);
 	
-	//std::vector<int> neighbour_copy = neighbours;
+	std::vector<int> neighbour_copy = neighbours;
 	T->destroyCell(id);
-	//for (int c : neighbour_copy) T->cell(c).findNeighbours();
+	T->cell(c_p).findNeighbours(); T->cell(c_q).findNeighbours();
+	for (int c : neighbour_copy) T->cell(c).findNeighbours();
+	
+	for (int v : cell_p_vertices) T->vert(v).orderCellContacts();
+	for (int v : cell_q_vertices) T->vert(v).orderCellContacts();
 	std::cout << "cell divided\n";
 }
 
@@ -242,12 +250,14 @@ void Cell::extrude()
 	//simply destroy cell if it is on a boundary
 	if (onBoundary()) 
 	{ 
-		//std::vector<int> neighbours_copy = neighbours;
+		std::vector<int> neighbours_copy = neighbours;
+		std::vector<int> vertices_copy = vertices;
 		T->destroyCell(id);
-		//for (int c : neighbours_copy) T->cell(c).findNeighbours();
+		for (int c : neighbours_copy) T->cell(c).findNeighbours();
+		for (int v : vertices_copy) if (T->vertexMap().count(v) > 0) T->vert(v).orderCellContacts();
 		return; 
 	}
-	for (int v: vertices) { if (T->vert(v).edgeContacts().size() > 3) return; }
+	for (int v : vertices) { if (T->vert(v).edgeContacts().size() > 3) return; }
 	
 	//std::vector<int> neighbours_copy = neighbours;
 	calcR_0(); 														//calculate centroid, create vertex at centroid, and detatch cell vertices and edges from cell
@@ -273,9 +283,12 @@ void Cell::extrude()
 	for (int c : T->vert(v_new).cellContacts()) { if (!(T->cell(c).valid())) T->cell(c).rotateVertices(); } //{ T->cell(c).outputVertices(); T->cell(c).outputEdgeVertices(); }}
 	//for (int c : T->vert(v_new).cellContacts()) { if (!(T->cell(c).valid())) { T->cell(c).outputVertices(); T->cell(c).outputEdgeVertices(); }}
 	
+	std::vector<int> neighbours_copy = neighbours;
 	vertices = {}; edges = {};
 	T->destroyCell(id);
-	//for (int c : neighbours_copy) T->cell(c).findNeighbours();
+	T->vert(v_new).orderCellContacts();
+	for (int c : neighbours_copy) T->cell(c).findNeighbours();
+	
 	std::cout << "cell extruded\n";
 }
 
@@ -337,7 +350,7 @@ void Cell::calcT_A() { T_A_ = param::K_a*(A_-param::A_0); }
 void Cell::findNeighbours()
 {
 	neighbours = {};
-	for (int i = 0; i < vertices.size(); i++)
+	/*for (int i = 0; i < vertices.size(); i++)
 	{
 		int v_prev = vertices[(i-1+vertices.size())%vertices.size()];
 		int v = vertices[i];
@@ -365,13 +378,33 @@ void Cell::findNeighbours()
 				}
 			}		
 		}
+	}*/
+	
+	//above probably faster, edge case not working, temporary fix is below
+	std::unordered_set<int> seen_cells;
+	std::vector<std::pair<int, double>> neighbour_cells_vec;
+
+	for (int v : vertices) 
+	{
+		for (int c : T->vert(v).cellContacts()) 
+		{
+			if (c == id || !seen_cells.insert(c).second) continue;
+			T->cell(c).calcR_0();
+			Vec vec = T->cell(c).r_0() - r_0_;
+			double theta = std::atan2(vec.y(), vec.x());
+			neighbour_cells_vec.push_back({c, theta});
+		}
 	}
+
+	std::sort(neighbour_cells_vec.begin(), neighbour_cells_vec.end(), 
+		[](const std::pair<int, double>& c1, const std::pair<int, double>& c2) { return c1.second < c2.second; });
+
+	for (const auto& c : neighbour_cells_vec) neighbours.push_back(c.first);
 }
 
 void Cell::calcm()
 {
-	findNeighbours(); 
-	int n = neighbours.size();
+	size_t n = neighbours.size();
 	double w = 0;
 	for (int i = 0; i < n; i++) w += T->D_angle(neighbours[i], neighbours[(i+1)%n]);
 	m_ = w*boost::math::constants::one_div_two_pi <double>();
