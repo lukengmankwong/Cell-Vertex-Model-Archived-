@@ -23,13 +23,14 @@ private:
     std::unordered_set<int> cell_junctions;
   
 public:
+
     Edge(Tissue* T, int v1, int v2);
     bool operator==(const Edge& other) const;
 
     const int v1() const; const int v2() const;
-    const std::unordered_set<int>& cellJunctions() const;
     const double l() const;
     const double T_l() const;
+    const std::unordered_set<int>& cellJunctions() const;
 
     void addCellJunction(int cell_id);
     void removeCellJunction(int cell_id);
@@ -42,7 +43,6 @@ public:
     void calcT_l();
     
     void T1merge();
-    void T1();
 
 };
 

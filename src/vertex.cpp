@@ -51,6 +51,7 @@ Vec Vertex::calcSurfaceForce()
 	}
 	return f_A;
 }
+
 Vec Vertex::calcLineForce()
 {
 	Vec f_L(0,0);
@@ -88,7 +89,6 @@ void Vertex::orderCellContacts()
 		[](const std::pair<int, double>& c1, const std::pair<int, double>& c2) { return c1.second < c2.second; });
 	cell_contacts_ordered = contacts;
 }
-
 
 void Vertex::T1split()
 {
@@ -178,7 +178,6 @@ void Vertex::T1split()
 	std::cout << "T1 split\n";
 }
 
-
 void Vertex::calcm()
 {
 	//cell order already known
@@ -187,5 +186,3 @@ void Vertex::calcm()
 	for (int i = 0; i < n; i++) w += T->D_angle(cell_contacts_ordered[i].first, cell_contacts_ordered[(i+1)%n].first);
 	m_ = w*boost::math::constants::one_div_two_pi <double>();
 }
-
-

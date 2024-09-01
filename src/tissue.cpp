@@ -8,6 +8,19 @@ Tissue::Tissue() : v_c_(0), e_c_(0), c_c_(0), timestep(0)
 }
 Tissue::~Tissue() {}
 
+const std::unordered_map<int, Vertex>& Tissue::vertexMap() const { return v_map; }
+const std::unordered_map<int, Edge>& Tissue::edgeMap() const { return e_map; }
+const std::unordered_map<int, Cell>& Tissue::cellMap() const { return c_map; }
+const int Tissue::v_c() const { return v_c_; }
+const int Tissue::e_c() const { return e_c_; }
+const int Tissue::c_c() const { return c_c_; }
+
+const std::vector<int>& Tissue::cellStepDefects() const { return cell_defects; }
+const std::vector<int>& Tissue::vertexStepDefects() const { return vertex_defects; }
+
+Vertex& Tissue::vert(int v) { return v_map.at(v); }
+Edge& Tissue::edge(int e) { return e_map.at(e); }
+Cell& Tissue::cell(int c) { return c_map.at(c); }
 
 void Tissue::addDefects()
 {
@@ -21,22 +34,6 @@ void Tissue::addDefects()
 		|| std::fabs(vertex.second.m()-1) < 1e-3 || std::fabs(vertex.second.m()+1) < 1e-3) vertex_step_defects.push_back(vertex.first); }
 	vertex_defects = vertex_step_defects;
 }
-
-const std::vector<int>& Tissue::cellStepDefects() const { return cell_defects; }
-const std::vector<int>& Tissue::vertexStepDefects() const { return vertex_defects; }
-
-const std::unordered_map<int, Vertex>& Tissue::vertexMap() const { return v_map; }
-const std::unordered_map<int, Edge>& Tissue::edgeMap() const { return e_map; }
-const std::unordered_map<int, Cell>& Tissue::cellMap() const { return c_map; }
-
-Vertex& Tissue::vert(int v) { return v_map.at(v); }
-Edge& Tissue::edge(int e) { return e_map.at(e); }
-Cell& Tissue::cell(int c) { return c_map.at(c); }
-
-const int Tissue::v_c() const { return v_c_; }
-const int Tissue::e_c() const { return e_c_; }
-const int Tissue::c_c() const { return c_c_; }
-
 
 const int Tissue::createVertex(Point r)
 {
@@ -58,23 +55,6 @@ const int Tissue::createCell(std::vector<int>& vertices, std::vector<int>& edges
 	return c_c_++; 																	//return id of created cell
 }
 
-void Tissue::cellExchangeVertex(int c, int v_old, int v_new) { c_map.at(c).exchangeVertex(v_old, v_new); }
-
-void Tissue::cellNewVertex(int c, int v, int i) 
-{ 
-	c_map.at(c).addVertex(v, i);  
-	v_map.at(v).addCellContact(c);
-}
-void Tissue::cellNewEdge(int c, int e, int i)
-{
-	c_map.at(c).addEdge(e, i);
-	e_map.at(e).addCellJunction(c);
-}
-
-void Tissue::cellRemoveVertex(int c, int v) { c_map.at(c).removeVertex(v); }
-int Tissue::cellRemoveEdge(int c, int e) { return c_map.at(c).removeEdge(e); }
-
-
 void Tissue::destroyVertex(int v) { v_map.erase(v);}
 void Tissue::destroyEdge(int e) 
 { 
@@ -91,6 +71,28 @@ void Tissue::destroyCell(int c)
 }
 
 
+
+
+void Tissue::cellNewVertex(int c, int v, int i) 
+{ 
+	c_map.at(c).addVertex(v, i);  
+	v_map.at(v).addCellContact(c);
+}
+void Tissue::cellRemoveVertex(int c, int v) { c_map.at(c).removeVertex(v); }
+void Tissue::cellExchangeVertex(int c, int v_old, int v_new) { c_map.at(c).exchangeVertex(v_old, v_new); }
+
+void Tissue::cellNewEdge(int c, int e, int i)
+{
+	c_map.at(c).addEdge(e, i);
+	e_map.at(e).addCellJunction(c);
+}
+int Tissue::cellRemoveEdge(int c, int e) { return c_map.at(c).removeEdge(e); }
+
+
+void Tissue::cellsFindNeighbours() { for (auto& cell : c_map) cell.second.findNeighbours(); }
+void Tissue::verticesFindNeighbours() { for (auto& vertex : v_map) vertex.second.orderCellContacts(); }
+
+
 const bool Tissue::commonEdge(int c1, int c2) const
 {
 	for (int e : c_map.at(c1).Edges())
@@ -100,6 +102,14 @@ const bool Tissue::commonEdge(int c1, int c2) const
 	}
 	return false;
 }
+
+const double Tissue::D_angle(int c_i, int c_j) const
+{
+	double Z_i = c_map.at(c_i).Z(); double X_i = c_map.at(c_i).X(); double S_i = std::sqrt(X_i*X_i+Z_i*Z_i);
+	double Z_j = c_map.at(c_j).Z(); double X_j = c_map.at(c_j).X(); double S_j = std::sqrt(X_j*X_j+Z_j*Z_j);
+	return std::asin( (Z_i*X_j-X_i*Z_j) / (S_i*S_j) );
+}
+
 
 void Tissue::extrusion()
 {
@@ -149,16 +159,6 @@ void Tissue::division()
 	for (int c : large_cells) { c_map.at(c).divide(); }
 }
 
-void Tissue::T1()
-{
-	//std::vector<int> short_edges;
-	//for (const auto& edge : e_map) if ( edge.second.l() < param::l_min ) { short_edges.push_back(edge.first); }
-	//for (int e : short_edges) e_map.at(e).T1merge();
-	std::vector<int> fourfold_vertices;
-	for (const auto& vertex : v_map) if (vertex.second.edgeContacts().size() == 4) fourfold_vertices.push_back(vertex.first);
-	for (int v : fourfold_vertices){ v_map.at(v).T1split(); }
-}
-
 void Tissue::transitions()
 {
 	for (std::pair<const int,Cell>& cell : c_map) cell.second.calcA();
@@ -167,16 +167,15 @@ void Tissue::transitions()
 	division();
 }
 
-const double Tissue::D_angle(int c_i, int c_j) const
+void Tissue::T1()
 {
-	double Z_i = c_map.at(c_i).Z(); double X_i = c_map.at(c_i).X(); double S_i = std::sqrt(X_i*X_i+Z_i*Z_i);
-	double Z_j = c_map.at(c_j).Z(); double X_j = c_map.at(c_j).X(); double S_j = std::sqrt(X_j*X_j+Z_j*Z_j);
-	return std::asin( (Z_i*X_j-X_i*Z_j) / (S_i*S_j) );
+	std::vector<int> short_edges;
+	for (const auto& edge : e_map) if ( edge.second.l() < param::l_min ) { short_edges.push_back(edge.first); }
+	//for (int e : short_edges) e_map.at(e).T1merge();
+	std::vector<int> fourfold_vertices;
+	for (const auto& vertex : v_map) if (vertex.second.edgeContacts().size() == 4) fourfold_vertices.push_back(vertex.first);
+	for (int v : fourfold_vertices){ v_map.at(v).T1split(); }
 }
-
-void Tissue::cellsFindNeighbours() { for (auto& cell : c_map) cell.second.findNeighbours(); }
-void Tissue::verticesFindNeighbours() { for (auto& vertex : v_map) vertex.second.orderCellContacts(); }
-
 
 void Tissue::run(int max_timestep)
 {
@@ -213,5 +212,3 @@ void Tissue::run(int max_timestep)
         timestep++;	
 	}
 }
-
-

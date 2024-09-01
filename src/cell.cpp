@@ -16,30 +16,6 @@ Cell::Cell(Tissue* T, std::vector<int>& vertices, std::vector<int>& edges) :
 }
 
 
-void Cell::outputVertices() const 
-{ 
-	std::cout << "cell (" << id << ") vertices: "; 
-	for (int v : vertices) std::cout << v << ' '; 
-	std::cout << '\n';
-}
-void Cell::outputEdges() const 
-{ 
-	std::cout << "cell (" << id << ") edges: ";
-	for (int e : edges) std::cout << e << ' '; 
-	std::cout << '\n';
-}
-void Cell::outputEdgeVertices() const 
-{ 
-	std::cout << "cell (" << id << ") vertices by edge: ";
-	for (int e : edges) std::cout << T->edge(e).v1() << ' ' << T->edge(e).v2() << "   "; 
-	std::cout << '\n';
-}
-
-
-const std::vector<int>& Cell::Vertices()	const { return vertices; }
-const std::vector<int>& Cell::Edges() 	 	const { return edges; }
-const std::vector<int>& Cell::Neighbours()	const { return neighbours; }
-
 const Point& 	Cell::r_0() const { return r_0_; }
 const double 	Cell::A() 	const { return S_*A_; }
 const double 	Cell::S() 	const { return S_; }
@@ -50,17 +26,10 @@ const double 	Cell::Z() 	const { return Z_; }
 const double 	Cell::X() 	const { return X_; }
 const double 	Cell::m() 	const { return m_; }
 
-const bool Cell::hasEdge(int e) const
-{
-	std::vector<int>::const_iterator it = std::find(edges.begin(), edges.end(), e);
-	return it != edges.end();
-}
+const std::vector<int>& Cell::Vertices()	const { return vertices; }
+const std::vector<int>& Cell::Edges() 	 	const { return edges; }
+const std::vector<int>& Cell::Neighbours()	const { return neighbours; }
 
-const bool Cell::onBoundary() const
-{
-	for (int e : edges) { if (T->edge(e).cellJunctions().size() < 2) return true; }
-	return false;
-}
 
 void Cell::addVertex(int v, int i) { vertices.insert(vertices.begin()+i, v); }
 void Cell::removeVertex(int v) 
@@ -73,19 +42,6 @@ void Cell::removeVertex(int v)
 	}
 	
 }
-void Cell::addEdge(int e, int i) { edges.insert(edges.begin()+i, e); }
-int Cell::removeEdge(int e) 
-{ 
-	std::vector<int>::const_iterator it = std::find(edges.begin(), edges.end(),e);
-	if (it != edges.end())
-	{
-		edges.erase(it); 
-		T->edge(e).removeCellJunction(id);
-	}
-	return std::distance(edges.cbegin(), it);
-}
-
-
 void Cell::exchangeVertex(int v_old, int v_new)
 {	
 	std::vector<int>::iterator it_new = std::find(vertices.begin(), vertices.end(), v_new);
@@ -100,8 +56,86 @@ void Cell::exchangeVertex(int v_old, int v_new)
 	}
 	removeVertex(v_old);
 }
-
 void Cell::rotateVertices() { std::rotate(vertices.rbegin(), vertices.rbegin() + 1, vertices.rend());}
+
+void Cell::addEdge(int e, int i) { edges.insert(edges.begin()+i, e); }
+int Cell::removeEdge(int e) 
+{ 
+	std::vector<int>::const_iterator it = std::find(edges.begin(), edges.end(),e);
+	if (it != edges.end())
+	{
+		edges.erase(it); 
+		T->edge(e).removeCellJunction(id);
+	}
+	return std::distance(edges.cbegin(), it);
+}
+
+
+const bool Cell::hasEdge(int e) const
+{
+	std::vector<int>::const_iterator it = std::find(edges.begin(), edges.end(), e);
+	return it != edges.end();
+}
+const bool Cell::onBoundary() const
+{
+	for (int e : edges) { if (T->edge(e).cellJunctions().size() < 2) return true; }
+	return false;
+}
+
+void Cell::findNeighbours()
+{
+	neighbours = {};
+	/*for (int i = 0; i < vertices.size(); i++)
+	{
+		int v_prev = vertices[(i-1+vertices.size())%vertices.size()];
+		int v = vertices[i];
+		int v_next = vertices[(i+1)%vertices.size()];
+		
+		const std::unordered_set<int>& cell_contacts_prev = T->vert(v_prev).cellContacts();
+		const std::unordered_set<int>& cell_contacts = T->vert(v).cellContacts();
+		const std::unordered_set<int>& cell_contacts_next = T->vert(v_next).cellContacts();
+		size_t n = cell_contacts.size();
+		
+		for (int c : cell_contacts)
+		{
+			if (c != id)
+			{
+				if (n <= 3)
+				{
+					std::unordered_set<int>::const_iterator it_next = std::find(cell_contacts_next.begin(), cell_contacts_next.end(), c); //look for cell c in next vertex cell contacts
+					if (it_next == cell_contacts_next.end()) neighbours.push_back(c); //add c to nearest neighbours if it is not in the next vertex edge contacts
+				}
+				else 
+				{
+					std::unordered_set<int>::const_iterator it_prev = std::find(cell_contacts_prev.begin(), cell_contacts_prev.end(), c);
+					std::unordered_set<int>::const_iterator it_next = std::find(cell_contacts_next.begin(), cell_contacts_next.end(), c);
+					if (it_next == cell_contacts_next.end() && it_prev == cell_contacts_prev.end()) neighbours.push_back(c);
+				}
+			}		
+		}
+	}*/
+	
+	//above probably faster, edge case not working, temporary fix is below
+	std::unordered_set<int> seen_cells;
+	std::vector<std::pair<int, double>> neighbour_cells_vec;
+
+	for (int v : vertices) 
+	{
+		for (int c : T->vert(v).cellContacts()) 
+		{
+			if (c == id || !seen_cells.insert(c).second) continue;
+			T->cell(c).calcR_0();
+			Vec vec = T->cell(c).r_0() - r_0_;
+			double theta = std::atan2(vec.y(), vec.x());
+			neighbour_cells_vec.push_back({c, theta});
+		}
+	}
+
+	std::sort(neighbour_cells_vec.begin(), neighbour_cells_vec.end(), 
+		[](const std::pair<int, double>& c1, const std::pair<int, double>& c2) { return c1.second < c2.second; });
+
+	for (const auto& c : neighbour_cells_vec) neighbours.push_back(c.first);
+}
 
 const int Cell::longestEdge_i() const
 {
@@ -116,6 +150,54 @@ const int Cell::longestEdge_i() const
 	} return i_l;
 }
 
+
+void Cell::extrude()
+{
+	
+	//simply destroy cell if it is on a boundary
+	if (onBoundary()) 
+	{ 
+		std::vector<int> neighbours_copy = neighbours;
+		std::vector<int> vertices_copy = vertices;
+		T->destroyCell(id);
+		for (int c : neighbours_copy) T->cell(c).findNeighbours();
+		for (int v : vertices_copy) if (T->vertexMap().count(v) > 0) T->vert(v).orderCellContacts();
+		return; 
+	}
+	for (int v : vertices) { if (T->vert(v).edgeContacts().size() > 3) return; }
+	
+	//std::vector<int> neighbours_copy = neighbours;
+	calcR_0(); 														//calculate centroid, create vertex at centroid, and detatch cell vertices and edges from cell
+	int v_new = T->createVertex(r_0_);
+	for (int v : vertices) { T->vert(v).removeCellContact(id); }
+	for (int e : edges) { T->edge(e).removeCellJunction(id); }
+
+	for (int e : edges)
+	{	
+		int c = *(T->edge(e).cellJunctions().begin()); 				//cell outside edge
+		
+		//tell vertices that it is no longer in contact with the removed edges
+		T->vert(T->edge(e).v1()).removeEdgeContact(e);
+		T->vert(T->edge(e).v2()).removeEdgeContact(e);
+	
+		T->cell(c).removeEdge(e);									//disconnect edge from outside cell, edge will delete itself because it has no cell junctions	
+	}
+	for (int v : vertices)
+	{
+		int e = *(T->vert(v).edgeContacts().begin());				//only element left in the vertex edge_contacts (incident edge)
+		T->edge(e).swapVertex(v, v_new);							//reconnect incident edges so that they meet at r_0, this deletes the old vertex and tells cells it no longer has this vertex
+	}
+	for (int c : T->vert(v_new).cellContacts()) { if (!(T->cell(c).valid())) T->cell(c).rotateVertices(); } //{ T->cell(c).outputVertices(); T->cell(c).outputEdgeVertices(); }}
+	//for (int c : T->vert(v_new).cellContacts()) { if (!(T->cell(c).valid())) { T->cell(c).outputVertices(); T->cell(c).outputEdgeVertices(); }}
+	
+	std::vector<int> neighbours_copy = neighbours;
+	vertices = {}; edges = {};
+	T->destroyCell(id);
+	T->vert(v_new).orderCellContacts();
+	for (int c : neighbours_copy) T->cell(c).findNeighbours();
+	
+	std::cout << "cell extruded\n";
+}
 
 void Cell::divide()
 {
@@ -244,54 +326,6 @@ void Cell::divide()
 	std::cout << "cell divided\n";
 }
 
-void Cell::extrude()
-{
-	
-	//simply destroy cell if it is on a boundary
-	if (onBoundary()) 
-	{ 
-		std::vector<int> neighbours_copy = neighbours;
-		std::vector<int> vertices_copy = vertices;
-		T->destroyCell(id);
-		for (int c : neighbours_copy) T->cell(c).findNeighbours();
-		for (int v : vertices_copy) if (T->vertexMap().count(v) > 0) T->vert(v).orderCellContacts();
-		return; 
-	}
-	for (int v : vertices) { if (T->vert(v).edgeContacts().size() > 3) return; }
-	
-	//std::vector<int> neighbours_copy = neighbours;
-	calcR_0(); 														//calculate centroid, create vertex at centroid, and detatch cell vertices and edges from cell
-	int v_new = T->createVertex(r_0_);
-	for (int v : vertices) { T->vert(v).removeCellContact(id); }
-	for (int e : edges) { T->edge(e).removeCellJunction(id); }
-
-	for (int e : edges)
-	{	
-		int c = *(T->edge(e).cellJunctions().begin()); 				//cell outside edge
-		
-		//tell vertices that it is no longer in contact with the removed edges
-		T->vert(T->edge(e).v1()).removeEdgeContact(e);
-		T->vert(T->edge(e).v2()).removeEdgeContact(e);
-	
-		T->cell(c).removeEdge(e);									//disconnect edge from outside cell, edge will delete itself because it has no cell junctions	
-	}
-	for (int v : vertices)
-	{
-		int e = *(T->vert(v).edgeContacts().begin());				//only element left in the vertex edge_contacts (incident edge)
-		T->edge(e).swapVertex(v, v_new);							//reconnect incident edges so that they meet at r_0, this deletes the old vertex and tells cells it no longer has this vertex
-	}
-	for (int c : T->vert(v_new).cellContacts()) { if (!(T->cell(c).valid())) T->cell(c).rotateVertices(); } //{ T->cell(c).outputVertices(); T->cell(c).outputEdgeVertices(); }}
-	//for (int c : T->vert(v_new).cellContacts()) { if (!(T->cell(c).valid())) { T->cell(c).outputVertices(); T->cell(c).outputEdgeVertices(); }}
-	
-	std::vector<int> neighbours_copy = neighbours;
-	vertices = {}; edges = {};
-	T->destroyCell(id);
-	T->vert(v_new).orderCellContacts();
-	for (int c : neighbours_copy) T->cell(c).findNeighbours();
-	
-	std::cout << "cell extruded\n";
-}
-
 
 void Cell::calcR_0()
 {
@@ -304,6 +338,23 @@ void Cell::calcR_0()
     }
     r_0_ = Point(x_sum/vertices.size(), y_sum/vertices.size());
 }
+
+void Cell::calcA()
+{
+	A_ = 0;
+	for (int i = 0; i < vertices.size(); i++) {
+		A_ += T->vert(vertices[i]).r().x()*T->vert(vertices[(i+1)%vertices.size()]).r().y()
+			- T->vert(vertices[(i+1)%vertices.size()]).r().x()*T->vert(vertices[i]).r().y();
+	} A_ *= 0.5;
+}
+
+void Cell::calcL()
+{
+	L_ = 0; 
+	for (int e : edges) L_ += T->edge(e).l(); //edge lengths must already be calculated
+}
+
+void Cell::calcT_A() { T_A_ = param::K_a*(A_-param::A_0); }
 
 void Cell::calcG()
 {
@@ -329,79 +380,6 @@ void Cell::calcG()
 	X_ = G[1];
 }
 
-void Cell::calcA()
-{
-	A_ = 0;
-	for (int i = 0; i < vertices.size(); i++) {
-		A_ += T->vert(vertices[i]).r().x()*T->vert(vertices[(i+1)%vertices.size()]).r().y()
-			- T->vert(vertices[(i+1)%vertices.size()]).r().x()*T->vert(vertices[i]).r().y();
-	} A_ *= 0.5;
-}
-
-void Cell::calcL()
-{
-	L_ = 0;
-	//edge lengths must already be calculated
-	for (int e : edges) L_ += T->edge(e).l();
-}
-
-void Cell::calcT_A() { T_A_ = param::K_a*(A_-param::A_0); }
-
-void Cell::findNeighbours()
-{
-	neighbours = {};
-	/*for (int i = 0; i < vertices.size(); i++)
-	{
-		int v_prev = vertices[(i-1+vertices.size())%vertices.size()];
-		int v = vertices[i];
-		int v_next = vertices[(i+1)%vertices.size()];
-		
-		const std::unordered_set<int>& cell_contacts_prev = T->vert(v_prev).cellContacts();
-		const std::unordered_set<int>& cell_contacts = T->vert(v).cellContacts();
-		const std::unordered_set<int>& cell_contacts_next = T->vert(v_next).cellContacts();
-		size_t n = cell_contacts.size();
-		
-		for (int c : cell_contacts)
-		{
-			if (c != id)
-			{
-				if (n <= 3)
-				{
-					std::unordered_set<int>::const_iterator it_next = std::find(cell_contacts_next.begin(), cell_contacts_next.end(), c); //look for cell c in next vertex cell contacts
-					if (it_next == cell_contacts_next.end()) neighbours.push_back(c); //add c to nearest neighbours if it is not in the next vertex edge contacts
-				}
-				else 
-				{
-					std::unordered_set<int>::const_iterator it_prev = std::find(cell_contacts_prev.begin(), cell_contacts_prev.end(), c);
-					std::unordered_set<int>::const_iterator it_next = std::find(cell_contacts_next.begin(), cell_contacts_next.end(), c);
-					if (it_next == cell_contacts_next.end() && it_prev == cell_contacts_prev.end()) neighbours.push_back(c);
-				}
-			}		
-		}
-	}*/
-	
-	//above probably faster, edge case not working, temporary fix is below
-	std::unordered_set<int> seen_cells;
-	std::vector<std::pair<int, double>> neighbour_cells_vec;
-
-	for (int v : vertices) 
-	{
-		for (int c : T->vert(v).cellContacts()) 
-		{
-			if (c == id || !seen_cells.insert(c).second) continue;
-			T->cell(c).calcR_0();
-			Vec vec = T->cell(c).r_0() - r_0_;
-			double theta = std::atan2(vec.y(), vec.x());
-			neighbour_cells_vec.push_back({c, theta});
-		}
-	}
-
-	std::sort(neighbour_cells_vec.begin(), neighbour_cells_vec.end(), 
-		[](const std::pair<int, double>& c1, const std::pair<int, double>& c2) { return c1.second < c2.second; });
-
-	for (const auto& c : neighbour_cells_vec) neighbours.push_back(c.first);
-}
-
 void Cell::calcm()
 {
 	size_t n = neighbours.size();
@@ -409,6 +387,9 @@ void Cell::calcm()
 	for (int i = 0; i < n; i++) w += T->D_angle(neighbours[i], neighbours[(i+1)%n]);
 	m_ = w*boost::math::constants::one_div_two_pi <double>();
 }
+
+
+
 
 
 bool Cell::valid()
@@ -419,11 +400,21 @@ bool Cell::valid()
 }
 
 
-
-
-
-
-
-
-
-
+void Cell::outputVertices() const 
+{ 
+	std::cout << "cell (" << id << ") vertices: "; 
+	for (int v : vertices) std::cout << v << ' '; 
+	std::cout << '\n';
+}
+void Cell::outputEdges() const 
+{ 
+	std::cout << "cell (" << id << ") edges: ";
+	for (int e : edges) std::cout << e << ' '; 
+	std::cout << '\n';
+}
+void Cell::outputEdgeVertices() const 
+{ 
+	std::cout << "cell (" << id << ") vertices by edge: ";
+	for (int e : edges) std::cout << T->edge(e).v1() << ' ' << T->edge(e).v2() << "   "; 
+	std::cout << '\n';
+}

@@ -1,6 +1,13 @@
 #include "functions.h"
 
 
+double random(double min, double max, unsigned int seed)
+{
+    std::mt19937 generator(seed);
+    std::uniform_real_distribution<double> dist(min, max);
+    return dist(generator);
+}
+
 void removeDuplicates(std::vector<int>& vec) {
     std::unordered_set<int> seen;   // To track seen elements
     auto it = vec.begin();
@@ -17,12 +24,12 @@ void removeDuplicates(std::vector<int>& vec) {
 }
 
 
-void getInitialData(VD& vd, Tissue& Tissue, bool (*in)(const Point&))
+void getInitialData(VD& vd, Tissue& T, bool (*in)(const Point&))
 {
     std::cout << "COLLECTING INITIAL DATA\n";
 	for (VD::Vertex_iterator vit = vd.vertices_begin(); vit != vd.vertices_end(); vit++)
 	{       
-        Tissue.createVertex(vit->point());
+        T.createVertex(vit->point());
     }
     
     for (VD::Face_iterator fi = vd.faces_begin(); fi != vd.faces_end(); fi++) 
@@ -34,7 +41,7 @@ void getInitialData(VD& vd, Tissue& Tissue, bool (*in)(const Point&))
         do { 
 			if (!ec->is_unbounded()) 
 			{
-				for (const auto& vertex : Tissue.vertexMap())
+				for (const auto& vertex : T.vertexMap())
 				{
 					if (ec->source()->point() == vertex.second.r())
 					{
@@ -53,7 +60,7 @@ void getInitialData(VD& vd, Tissue& Tissue, bool (*in)(const Point&))
 			{
 				int v1 = cell_vertices[i]; int v2 = cell_vertices[(i+1)%cell_vertices.size()];
 				bool found = false;
-				for (const auto& edge : Tissue.edgeMap())
+				for (const auto& edge : T.edgeMap())
 				{
 					if (edge.second.v1() == v1 && edge.second.v2() == v2)
 					{
@@ -70,46 +77,46 @@ void getInitialData(VD& vd, Tissue& Tissue, bool (*in)(const Point&))
 				}
 				if (!found)
 				{
-					cell_edges.push_back(Tissue.createEdge(v1, v2));
+					cell_edges.push_back(T.createEdge(v1, v2));
 				}		
 			}
 		}
 		//for (int v : cell_edges) { std::cout << v << '\n'; } std::cout << '\n';
 		removeDuplicates(cell_edges); //temporary fix
-        Tissue.createCell(cell_vertices, cell_edges);
+        T.createCell(cell_vertices, cell_edges);
     } 
     
     
     
 	std::unordered_set<int> cells_to_remove;
-	for (const auto& vertex : Tissue.vertexMap())  
+	for (const auto& vertex : T.vertexMap())  
 	{ 
 		if ( !in(vertex.second.r()) ) 
 		{ 
 			cells_to_remove.insert(vertex.second.cellContacts().begin(), vertex.second.cellContacts().end()); 
 		}
 	}
-	for (const auto& cell : Tissue.cellMap())
+	for (const auto& cell : T.cellMap())
 	{
-		//if (cell.second.Edges().size() < 3) { cells_to_remove.insert(cell.first); }
+		if (cell.second.Edges().size() < 3) { cells_to_remove.insert(cell.first); }
 	}
-	for (int c : cells_to_remove) { Tissue.destroyCell(c); }
-	int V = Tissue.vertexMap().size(); int E = Tissue.edgeMap().size(); int C = Tissue.cellMap().size();
+	for (int c : cells_to_remove) { T.destroyCell(c); }
+	int V = T.vertexMap().size(); int E = T.edgeMap().size(); int C = T.cellMap().size();
 	int Euler = V-E+C;
     std::cout << "V=" << V << "\nE=" << E << "\nC=" << C << "\nV-E+C=" << Euler << '\n';	
-	Tissue.cellsFindNeighbours();
-	Tissue.verticesFindNeighbours();
+	T.cellsFindNeighbours();
+	T.verticesFindNeighbours();
 }
 
 
-void outputData(const Tissue& Tissue)
+void outputData(const Tissue& T)
 {
-    for (auto& cell : Tissue.cellMap()) 
+    for (const auto& cell : T.cellMap()) 
     {
         std::cout << "Cell (" << cell.first << ") : ";
-        for (int vertex_id : cell.second.Vertices()) { std::cout << Tissue.vertexMap().at(vertex_id).r() << ", "; }
+        for (int vertex_id : cell.second.Vertices()) { std::cout << T.vertexMap().at(vertex_id).r() << ", "; }
         std::cout << '\n';
-        for (int edge_id : cell.second.Edges()) { std::cout << Tissue.edgeMap().at(edge_id).v1() << ' ' << Tissue.edgeMap().at(edge_id).v2() << '\n'; }
+        for (int edge_id : cell.second.Edges()) { std::cout << T.edgeMap().at(edge_id).v1() << ' ' << T.edgeMap().at(edge_id).v2() << '\n'; }
         std::cout << '\n';
     }
 }
@@ -200,6 +207,3 @@ void writeVertexDefectsFile(Tissue* T, const std::string& filename_vertex_defect
         
     file.close();
 }
-
-
-

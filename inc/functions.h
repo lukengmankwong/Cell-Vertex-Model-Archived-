@@ -7,18 +7,22 @@
 #include <string>
 #include <fstream>
 
+#include <random>
+
 #include "libraries.h"
 #include "tissue.h"
 #include "vertex.h"
 #include "edge.h"
 #include "cell.h"
 
-void getInitialData(VD& vd, Tissue& tissue, bool (*in)(const Point&));
+double random(double min, double max, unsigned int seed);
+
+void getInitialData(VD& vd, Tissue& T, bool (*in)(const Point&));
 void outputData(const Tissue& Tissue);
 
-void writeCellsFile(Tissue* tissue, const std::string& filename_cells);
-void writeDirectorsFile(Tissue* tissue, const std::string& filename_directors);
-void writeCellDefectsFile(Tissue* tissue, const std::string& filename_cell_defects);
-void writeVertexDefectsFile(Tissue* tissue, const std::string& filename_vertex_defects);
+void writeCellsFile(Tissue* T, const std::string& filename_cells);
+void writeDirectorsFile(Tissue* T, const std::string& filename_directors);
+void writeCellDefectsFile(Tissue* T, const std::string& filename_cell_defects);
+void writeVertexDefectsFile(Tissue* T, const std::string& filename_vertex_defects);
 
 #endif // FUNCTIONS_H

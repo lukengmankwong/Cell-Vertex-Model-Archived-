@@ -5,15 +5,14 @@ Edge::Edge(Tissue* T, int v1, int v2) : T(T), id(T->e_c()), v_1(v1), v_2(v2) {}
 
 bool Edge::operator==(const Edge& other) const { return ((v_1 == other.v_1) && (v_2 == other.v_2)) || ((v_1== other.v_2) && (v_2 == other.v_1)); }
 
-const int Edge::v1() const { return v_1; }
-const int Edge::v2() const { return v_2; }
-const std::unordered_set<int>& Edge::cellJunctions() const { return cell_junctions; }
-const double Edge::l() const { return l_; }
-const double Edge::T_l() const { return T_l_; }
+const int Edge::v1()		const { return v_1; }
+const int Edge::v2() 		const { return v_2; }
+const double Edge::l() 		const { return l_; }
+const double Edge::T_l()	const { return T_l_; }
+const std::unordered_set<int>& Edge::cellJunctions()	const { return cell_junctions; }
 
 
 void Edge::addCellJunction(int cell_id) { cell_junctions.insert(cell_id); }
-
 void Edge::removeCellJunction(int cell_id) 
 {
     cell_junctions.erase(cell_id);
@@ -111,4 +110,3 @@ void Edge::T1merge()
 	//for (int c : T->vert(v_2).cellContacts()) { T->cell(c).outputEdgeVertices(); T->cell(c).outputVertices(); }
 
 }
-

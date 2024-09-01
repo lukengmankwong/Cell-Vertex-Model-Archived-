@@ -18,16 +18,15 @@ private:
     Point r_;
     Vec force_;
     double m_;
+    int not_boundary_cell;
     
     std::unordered_set<int> cell_contacts;
     std::unordered_set<int> edge_contacts;
     
+	std::vector<std::pair<int, double>> cell_contacts_ordered;
+    
     Vec calcSurfaceForce();
     Vec calcLineForce();
-    
-    int not_boundary_cell;
-    
-    std::vector<std::pair<int, double>> cell_contacts_ordered;
 
 public:
     
@@ -42,6 +41,7 @@ public:
 
     void addCellContact(int cell_id);
     void removeCellContact(int cell_id);
+    
     void addEdgeContact(int edge_id);
     void removeEdgeContact(int edge_id);
 
@@ -49,9 +49,8 @@ public:
     void applyForce();
     void shearForce();
 
-	void T1split();
-	
 	void orderCellContacts();
+	void T1split();
 	void calcm();
 	
 };
