@@ -42,7 +42,7 @@ public:
     void calcLength();
     void calcT_l();
     
-    void T1merge();
+    void T1();
 
 };
 
