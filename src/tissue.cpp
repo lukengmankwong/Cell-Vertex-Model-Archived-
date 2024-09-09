@@ -5,6 +5,10 @@ Tissue::Tissue() : v_c_(0), e_c_(0), c_c_(0), timestep(0)
 {
 	cell_defects.reserve(1000);
 	vertex_defects.reserve(1000);
+	
+	v_in = {false};
+	e_in = {false};
+	c_in = {false};
 }
 Tissue::~Tissue() {}
 
@@ -38,6 +42,7 @@ void Tissue::addDefects()
 const int Tissue::createVertex(Point r)
 {
 	v_map.emplace(v_c_, Vertex(this, r));
+	v_arr[v_c_] = Vertex(this, r); v_in[v_c_] = true;
 	return v_c_++; 																	//return id of created vertex
 }
 const int Tissue::createEdge(const int v1, const int v2)
@@ -45,13 +50,15 @@ const int Tissue::createEdge(const int v1, const int v2)
 	e_map.emplace(e_c_, Edge(this, v1, v2));
 	v_map.at(v1).addEdgeContact(e_c_); 												//vertex v1 knows it's part of edge
 	v_map.at(v2).addEdgeContact(e_c_); 												//vertex v2 knows it's part of edge
+	
+	
 	return e_c_++; 																	//return id of created edge
 }
 const int Tissue::createCell(std::vector<int>& vertices, std::vector<int>& edges)
 {
 	c_map.emplace(c_c_, Cell(this, vertices, edges));
 	for (int v : vertices) { v_map.at(v).addCellContact(c_c_); } 					//vertices know they are part of cell
-	for (int e : edges) { e_map.at(e).addCellJunction(c_c_); } 	//edges know they are part of cell
+	for (int e : edges) { e_map.at(e).addCellJunction(c_c_); } 						//edges know they are part of cell	
 	return c_c_++; 																	//return id of created cell
 }
 

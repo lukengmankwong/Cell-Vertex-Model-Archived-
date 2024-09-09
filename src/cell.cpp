@@ -1,4 +1,5 @@
 #include "cell.h"
+#include "tissue.h"
 
 
 Cell::Cell(Tissue* T, std::vector<int>& vertices, std::vector<int>& edges) : 
@@ -14,6 +15,7 @@ Cell::Cell(Tissue* T, std::vector<int>& vertices, std::vector<int>& edges) :
 	} A_ *= 0.5;
 	S_ = A_/std::fabs(A_);
 }
+Cell::Cell() = default;
 
 
 const Point& 	Cell::r_0() const { return r_0_; }

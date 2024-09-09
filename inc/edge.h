@@ -4,27 +4,37 @@
 #include <cmath>
 #include <vector>
 #include <unordered_set>
-
-#include "tissue.h"
-class Tissue;
+#include <algorithm>
+#include <array>
+#include <iostream>
 
 #include "parameters.h"
+#include "libraries.h"
+#include "vertex.h"
+
+class Tissue;
+
+class Cell;
+
 
 class Edge
 {
 private:
 	
 	Tissue* T;
-    const int id;
+    int id;
     int v_1, v_2;
+    Vertex* v_i, v_j;
     double l_; //length
     double T_l_; //line tension
     
     std::unordered_set<int> cell_junctions;
+    std::unordered_set<Cell*> cell_junctions_;
   
 public:
 
     Edge(Tissue* T, int v1, int v2);
+    Edge();
     bool operator==(const Edge& other) const;
 
     const int v1() const; const int v2() const;

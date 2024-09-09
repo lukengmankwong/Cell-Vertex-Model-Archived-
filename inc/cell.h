@@ -6,12 +6,15 @@
 #include <unordered_set>
 #include <algorithm>
 #include <array>
-
-#include <CGAL/Origin.h>
-#include "tissue.h"
-class Tissue;
+#include <iostream>
 
 #include "parameters.h"
+#include "libraries.h"
+
+class Tissue;
+
+class Vertex;
+class Edge;
 
 
 class Cell
@@ -19,10 +22,14 @@ class Cell
 private:
 
 	Tissue* T;
-	const int id;
+	int id;
     std::vector<int> vertices;
     std::vector<int> edges;
     std::vector<int> neighbours;
+    
+    std::vector<Vertex*> vertices_;
+    std::vector<Edge*> edges_;
+    std::vector<Cell*> neighbours_;
 
     Point r_0_;
     double A_; double S_; 		//cell area, area sign (+1 or -1)
@@ -40,6 +47,7 @@ private:
 public:
 
     Cell(Tissue* T, std::vector<int>& vertices, std::vector<int>& edges);
+    Cell();
     
     const Point& r_0() const;
     const double A() const; 

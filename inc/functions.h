@@ -3,11 +3,11 @@
 
 #include <vector>
 #include <unordered_map>
-
 #include <string>
 #include <fstream>
-
 #include <random>
+
+class Tissue;
 
 #include "libraries.h"
 #include "tissue.h"

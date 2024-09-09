@@ -18,7 +18,7 @@
 bool doughnut(const Point& p) 	{ return p.x()*p.x() + p.y()*p.y() > 100 && p.x()*p.x() + p.y()*p.y() < 700; }
 bool square(const Point& p)		{ return std::fabs(p.x()) < std::sqrt(1000)/2 && std::fabs(p.y()) < std::sqrt(1000)/2; }
 bool unbound(const Point& p) 	{ return true; }
-bool circle(const Point& p) 	{ return (p.x()-0)*(p.x()-0) + (p.y()-0)*(p.y()-0) < 800; }
+bool circle(const Point& p) 	{ return (p.x()-0)*(p.x()-0) + (p.y()-0)*(p.y()-0) < 700; }
 
 //some example cell voronoi seeds
 std::vector<Point> randomPoints(unsigned int n) 
@@ -46,7 +46,7 @@ std::vector<Point> hexagonalWithNoise(unsigned int n, double g)
 
 int main() 
 {
-	unsigned int cell_count = 3200;
+	unsigned int cell_count = 2800;
     std::vector<Point> points = hexagonalWithNoise(cell_count, 0.5);
     //std::vector<Point> points = randomPoints(cell_count);
     DT delauney_tri; 
@@ -62,7 +62,7 @@ int main()
 
     std::cout << "\nPRESS ENTER TO RUN SIMULATION"; std::cin.get();
     auto t_start2 = std::chrono::high_resolution_clock::now();
-    T.run(100000);
+    T.run(10000);
     auto t_end2 = std::chrono::high_resolution_clock::now();
 
     std::cout << "SIMULATION RAN IN " << std::chrono::duration<double, std::milli>(t_end2 - t_start2).count()/1000 << "s\n";

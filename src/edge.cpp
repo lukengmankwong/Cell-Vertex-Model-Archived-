@@ -1,7 +1,10 @@
 #include "edge.h"
+#include "tissue.h"
 
 
 Edge::Edge(Tissue* T, int v1, int v2) : T(T), id(T->e_c()), v_1(v1), v_2(v2) {}
+//Edge::Edge(Tissue* T, Vertex* v_i_, Vertex* v_j_) : T(T), id(T->e_c()), v_i_(v_i_), v_j_(v_j_) {}
+Edge::Edge() = default;
 
 bool Edge::operator==(const Edge& other) const { return ((v_1 == other.v_1) && (v_2 == other.v_2)) || ((v_1== other.v_2) && (v_2 == other.v_1)); }
 
@@ -173,8 +176,4 @@ void Edge::T1() //problem with order of v_p and v_q;
 	T->vert(v_a).orderCellContacts(); T->vert(v_b).orderCellContacts();
 	std::cout << "T1\n";
 }
-
-
-
-
 

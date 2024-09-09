@@ -1,4 +1,5 @@
 #include "vertex.h"
+#include "tissue.h"
 
 
 Vertex::Vertex(Tissue* T, Point r) : T(T), id(T->v_c()), r_(r), force_(Vec(0,0)) 
@@ -6,6 +7,7 @@ Vertex::Vertex(Tissue* T, Point r) : T(T), id(T->v_c()), r_(r), force_(Vec(0,0))
 	not_boundary_cell = 1; 
 	cell_contacts_ordered.reserve(8);
 }
+Vertex::Vertex() = default;
 
 bool Vertex::operator==(const Vertex& other) const { return r_ == other.r_; }
 
