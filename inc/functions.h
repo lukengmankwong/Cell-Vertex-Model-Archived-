@@ -17,7 +17,6 @@ class Tissue;
 
 double random(double min, double max, unsigned int seed);
 
-void getInitialData(VD& vd, Tissue& T, bool (*in)(const Point&));
 void outputData(const Tissue& Tissue);
 
 void writeCellsFile(Tissue* T, const std::string& filename_cells);

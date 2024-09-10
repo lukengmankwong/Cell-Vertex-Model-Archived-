@@ -88,37 +88,6 @@ const bool Cell::onBoundary() const
 void Cell::findNeighbours()
 {
 	neighbours = {};
-	/*for (int i = 0; i < vertices.size(); i++)
-	{
-		int v_prev = vertices[(i-1+vertices.size())%vertices.size()];
-		int v = vertices[i];
-		int v_next = vertices[(i+1)%vertices.size()];
-		
-		const std::unordered_set<int>& cell_contacts_prev = T->vert(v_prev).cellContacts();
-		const std::unordered_set<int>& cell_contacts = T->vert(v).cellContacts();
-		const std::unordered_set<int>& cell_contacts_next = T->vert(v_next).cellContacts();
-		size_t n = cell_contacts.size();
-		
-		for (int c : cell_contacts)
-		{
-			if (c != id)
-			{
-				if (n <= 3)
-				{
-					std::unordered_set<int>::const_iterator it_next = std::find(cell_contacts_next.begin(), cell_contacts_next.end(), c); //look for cell c in next vertex cell contacts
-					if (it_next == cell_contacts_next.end()) neighbours.push_back(c); //add c to nearest neighbours if it is not in the next vertex edge contacts
-				}
-				else 
-				{
-					std::unordered_set<int>::const_iterator it_prev = std::find(cell_contacts_prev.begin(), cell_contacts_prev.end(), c);
-					std::unordered_set<int>::const_iterator it_next = std::find(cell_contacts_next.begin(), cell_contacts_next.end(), c);
-					if (it_next == cell_contacts_next.end() && it_prev == cell_contacts_prev.end()) neighbours.push_back(c);
-				}
-			}		
-		}
-	}*/
-	
-	//above probably faster, edge case not working, temporary fix is below
 	std::unordered_set<int> seen_cells;
 	std::vector<std::pair<int, double>> neighbour_cells_vec;
 
@@ -163,8 +132,9 @@ void Cell::extrude()
 		std::vector<int> neighbours_copy = neighbours;
 		std::vector<int> vertices_copy = vertices;
 		T->destroyCell(id);
+		//update neighbours and contacts orders
 		for (int c : neighbours_copy) T->cell(c).findNeighbours();
-		for (int v : vertices_copy) if (T->vertexMap().count(v) > 0) T->vert(v).orderCellContacts();
+		for (int v : vertices_copy) if (T->v_alive(v)) T->vert(v).orderCellContacts();
 		return; 
 	}
 	for (int v : vertices) { if (T->vert(v).edgeContacts().size() > 3) return; }
@@ -391,8 +361,6 @@ void Cell::calcm()
 	for (int i = 0; i < n; i++) w += T->D_angle(neighbours[i], neighbours[(i+1)%n]);
 	m_ = w*boost::math::constants::one_div_two_pi <double>();
 }
-
-
 
 
 

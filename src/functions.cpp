@@ -8,108 +8,8 @@ double random(double min, double max, unsigned int seed)
     return dist(generator);
 }
 
-void removeDuplicates(std::vector<int>& vec) {
-    std::unordered_set<int> seen;   // To track seen elements
-    auto it = vec.begin();
 
-    while (it != vec.end()) {
-        // If the element is seen for the first time, keep it
-        if (seen.insert(*it).second) {
-            ++it;
-        } else {
-            // Otherwise, erase the duplicate
-            it = vec.erase(it);
-        }
-    }
-}
-
-
-void getInitialData(VD& vd, Tissue& T, bool (*in)(const Point&))
-{
-    std::cout << "COLLECTING INITIAL DATA\n";
-	for (VD::Vertex_iterator vit = vd.vertices_begin(); vit != vd.vertices_end(); vit++)
-	{       
-        T.createVertex(vit->point());
-    }
-    
-    for (VD::Face_iterator fi = vd.faces_begin(); fi != vd.faces_end(); fi++) 
-    {
-        std::vector<int> cell_vertices;
-        VD::Ccb_halfedge_circulator ec_start = fi->ccb();
-        VD::Ccb_halfedge_circulator ec = ec_start;
-
-        do { 
-			if (!ec->is_unbounded()) 
-			{
-				for (const auto& vertex : T.vertexMap())
-				{
-					if (ec->source()->point() == vertex.second.r())
-					{
-						cell_vertices.push_back(vertex.first);
-						break;
-					}
-				}
-			}
-			++ec;
-        } while (ec != ec_start);
-		
-        std::vector<int> cell_edges; 
-        if (true)
-        {
-			for (int i = 0; i < cell_vertices.size(); i++)
-			{
-				int v1 = cell_vertices[i]; int v2 = cell_vertices[(i+1)%cell_vertices.size()];
-				bool found = false;
-				for (const auto& edge : T.edgeMap())
-				{
-					if (edge.second.v1() == v1 && edge.second.v2() == v2)
-					{
-						cell_edges.push_back(edge.first);
-						found = true;
-						break;
-					}
-					else if (edge.second.v1() == v2 && edge.second.v2() == v1)
-					{
-						cell_edges.push_back(edge.first);
-						found = true;
-						break;
-					}
-				}
-				if (!found)
-				{
-					cell_edges.push_back(T.createEdge(v1, v2));
-				}		
-			}
-		}
-		//for (int v : cell_edges) { std::cout << v << '\n'; } std::cout << '\n';
-		removeDuplicates(cell_edges); //temporary fix
-        T.createCell(cell_vertices, cell_edges);
-    } 
-    
-    
-    
-	std::unordered_set<int> cells_to_remove;
-	for (const auto& vertex : T.vertexMap())  
-	{ 
-		if ( !in(vertex.second.r()) ) 
-		{ 
-			cells_to_remove.insert(vertex.second.cellContacts().begin(), vertex.second.cellContacts().end()); 
-		}
-	}
-	for (const auto& cell : T.cellMap())
-	{
-		if (cell.second.Edges().size() < 3) { cells_to_remove.insert(cell.first); }
-	}
-	for (int c : cells_to_remove) { T.destroyCell(c); }
-	int V = T.vertexMap().size(); int E = T.edgeMap().size(); int C = T.cellMap().size();
-	int Euler = V-E+C;
-    std::cout << "V=" << V << "\nE=" << E << "\nC=" << C << "\nV-E+C=" << Euler << '\n';	
-	T.cellsFindNeighbours();
-	T.verticesFindNeighbours();
-}
-
-
-void outputData(const Tissue& T)
+/*void outputData(const Tissue& T)
 {
     for (const auto& cell : T.cellMap()) 
     {
@@ -119,46 +19,50 @@ void outputData(const Tissue& T)
         for (int edge_id : cell.second.Edges()) { std::cout << T.edgeMap().at(edge_id).v1() << ' ' << T.edgeMap().at(edge_id).v2() << '\n'; }
         std::cout << '\n';
     }
-}
+}*/
 
 void writeCellsFile(Tissue* T, const std::string& filename_cells)
 {
+	std::vector<int> vertices = T->vertices();
 	std::unordered_map<int, int> index_map;
     int index = 0;
-    for (const auto& vertex : T->vertexMap()) { index_map[vertex.first] = index++; }
+    for (int v : vertices) { index_map[v] = index++; }
 
     std::ofstream graphFile(filename_cells);
-    graphFile << "# vtk DataFile Version 2.0\nGraph\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << T->vertexMap().size() << " float\n";
-    for (const auto& vertex : T->vertexMap()) { graphFile << vertex.second.r().x() << " " << vertex.second.r().y() << " 0\n"; }
+    graphFile << "# vtk DataFile Version 2.0\nGraph\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << vertices.size() << " float\n";
+    for (int v : vertices) { graphFile << T->vert(v).r().x() << " " << T->vert(v).r().y() << " 0\n"; }
     
-    int n = 0; for (const auto& cell : T->cellMap()) { n += cell.second.Vertices().size(); }
-    n += T->cellMap().size();
-    graphFile << "CELLS " << T->cellMap().size() << " " << n << '\n';
-    for (const auto& cell : T->cellMap()) 
+    std::vector<int> cells = T->cells();
+    int n = 0; for (int c : cells) { n += T->cell(c).Vertices().size(); }
+    n += cells.size();
+    graphFile << "CELLS " << cells.size() << " " << n << '\n';
+    for (int c : cells) 
     {
-		graphFile << cell.second.Vertices().size() << " ";
-		for (int v : cell.second.Vertices()) { graphFile << index_map[v] << " "; }
+		graphFile << T->cell(c).Vertices().size() << " ";
+		for (int v : T->cell(c).Vertices()) { graphFile << index_map[v] << " "; }
 		graphFile << '\n';
 	}
 	
-	graphFile << "CELL_TYPES " << T->cellMap().size() << '\n';
-	for (int c = 0; c < T->cellMap().size(); c++) { graphFile << "7\n"; }
-	   
+	graphFile << "CELL_TYPES " << cells.size() << '\n';
+	for (int c = 0; c < cells.size(); c++) { graphFile << "7\n"; }
+	
     graphFile.close();
 }
 
 void writeDirectorsFile(Tissue* T, const std::string& filename_directors)
 {
+	std::vector<int> cells = T->cells();
+	
 	std::ofstream directorFile(filename_directors);
-    directorFile << "# vtk DataFile Version 2.0\nns\nASCII\nDATASET POLYDATA\nPOINTS " << 2*T->cellMap().size() << " float\n";
-    for (const auto& cell : T->cellMap()) 
+    directorFile << "# vtk DataFile Version 2.0\nns\nASCII\nDATASET POLYDATA\nPOINTS " << 2*cells.size() << " float\n";
+    for (int c : cells) 
     { 
-		directorFile << (cell.second.r_0()-0.5*cell.second.n()).x() << " " << (cell.second.r_0()-0.5*cell.second.n()).y() << " 0\n";
-		directorFile << (cell.second.r_0()+0.5*cell.second.n()).x() << " " << (cell.second.r_0()+0.5*cell.second.n()).y() << " 0\n";
+		directorFile << (T->cell(c).r_0()-0.5*T->cell(c).n()).x() << " " << (T->cell(c).r_0()-0.5*T->cell(c).n()).y() << " 0\n";
+		directorFile << (T->cell(c).r_0()+0.5*T->cell(c).n()).x() << " " << (T->cell(c).r_0()+0.5*T->cell(c).n()).y() << " 0\n";
 	}
 	
-	directorFile << "LINES " << T->cellMap().size() << " " << 3*T->cellMap().size() << "\n";
-	for (int i = 0; i < T->cellMap().size(); i++) { directorFile << "2 " << 2*i << " " << 2*i+1 << "\n"; }
+	directorFile << "LINES " << cells.size() << " " << 3*cells.size() << "\n";
+	for (int i = 0; i < cells.size(); i++) { directorFile << "2 " << 2*i << " " << 2*i+1 << "\n"; }
 	
 	directorFile.close();
 }

@@ -12,22 +12,20 @@
 #include "parameters.h"
 #include "functions.h"
 
-#define ARR_SIZE 3000
+#define V_ARR_SIZE 6000
+#define E_ARR_SIZE 9000
+#define C_ARR_SIZE 3000
 
 class Tissue
 {
 private:
 
-	std::unordered_map<int, Vertex> v_map; int v_c_;
-	std::unordered_map<int, Edge> e_map; int e_c_;
-	std::unordered_map<int, Cell> c_map; int c_c_;
-	
-	std::array<Vertex, 2*ARR_SIZE> v_arr;
-	std::array<Edge, 3*ARR_SIZE> e_arr;
-	std::array<Cell, ARR_SIZE> c_arr;
-	std::array<bool, 2*ARR_SIZE> v_in;
-	std::array<bool, 3*ARR_SIZE> e_in;
-	std::array<bool, ARR_SIZE> c_in;
+	std::array<Vertex, V_ARR_SIZE> v_arr; 	int v_c_;
+	std::array<Edge, E_ARR_SIZE> e_arr; 	int e_c_;
+	std::array<Cell, C_ARR_SIZE> c_arr;		int c_c_;
+	std::array<bool, V_ARR_SIZE> v_in;
+	std::array<bool, E_ARR_SIZE> e_in;
+	std::array<bool, C_ARR_SIZE> c_in;
 	
 	int timestep;
 	std::vector<int> cell_defects;
@@ -41,12 +39,15 @@ private:
 	
 public:
 
-	Tissue();
+	Tissue(VD& vd, bool (*in)(const Point&));
 	~Tissue();
 	
-    const std::unordered_map<int, Vertex>& vertexMap() const;
-    const std::unordered_map<int, Edge>& edgeMap() const ;
-    const std::unordered_map<int, Cell>& cellMap() const;
+	const bool v_alive(int v) const;
+    
+    std::vector<int> cells();
+	std::vector<int> edges();
+	std::vector<int> vertices();
+    
     const int v_c() const; 
     const int e_c() const;
     const int c_c() const;
@@ -76,7 +77,6 @@ public:
 	void cellsFindNeighbours();
 	void verticesFindNeighbours();
 	
-	const bool commonEdge(int c1, int c2) const;
 	const double D_angle(int c_i, int c_j) const; 
 	
 	void run(int max_timestep);

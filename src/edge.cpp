@@ -121,9 +121,9 @@ void Edge::T1() //problem with order of v_p and v_q;
 				T->edge(e).swapVertex(v_2, v_x);
 			}
 		}
-		return T->cellRemoveEdge(c_x, id);
+		T->cellRemoveEdge(c_x, id);
 	};
-	int i_v1 = edgeToVertex(c_a, v_a); int i_v2 = edgeToVertex(c_b, v_b);
+	edgeToVertex(c_a, v_a); edgeToVertex(c_b, v_b);
 	/*std::cout << "Cell P:\n"; T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();
 	std::cout << "Cell Q:\n"; T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();
 	std::cout << "Cell A:\n"; T->cell(c_a).outputVertices(); T->cell(c_a).outputEdgeVertices();
