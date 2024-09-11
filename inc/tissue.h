@@ -20,12 +20,16 @@ class Tissue
 {
 private:
 
-	std::array<Vertex, V_ARR_SIZE> v_arr; 	int v_c_;
-	std::array<Edge, E_ARR_SIZE> e_arr; 	int e_c_;
-	std::array<Cell, C_ARR_SIZE> c_arr;		int c_c_;
+	std::array<Vertex, V_ARR_SIZE> v_arr; 	Vertex* v_c_;
+	std::array<Edge, E_ARR_SIZE> e_arr; 	Edge* e_c_;
+	std::array<Cell, C_ARR_SIZE> c_arr;		Cell* c_c_;
 	std::array<bool, V_ARR_SIZE> v_in;
 	std::array<bool, E_ARR_SIZE> e_in;
 	std::array<bool, C_ARR_SIZE> c_in;
+	
+	Vertex* v_0_;
+	Edge* e_0_;
+	Cell* c_0_;
 	
 	int timestep;
 	std::vector<int> cell_defects;
@@ -42,42 +46,35 @@ public:
 	Tissue(VD& vd, bool (*in)(const Point&));
 	~Tissue();
 	
-	const bool v_alive(int v) const;
+	const bool v_alive(Vertex* v) const;
     
-    std::vector<int> cells();
-	std::vector<int> edges();
-	std::vector<int> vertices();
+    std::vector<Vertex*> vertices();
+	std::vector<Edge*> edges();
+    std::vector<Cell*> cells();	
     
-    const int v_c() const; 
-    const int e_c() const;
-    const int c_c() const;
+    Vertex* const v_c() const; Vertex* const v_0() const;
+    Edge* const e_c() const; Edge* const e_0() const;
+    Cell* const c_c() const; Cell* const c_0() const;
     
     const std::vector<int>& cellStepDefects() const;
     const std::vector<int>& vertexStepDefects() const;
     
-    Vertex& vert(int v);
-    Edge& edge(int e);
-    Cell& cell(int c);
-    
-	const int createVertex(Point r);
-	const int createEdge(int v1, int v2);
-	const int createCell(std::vector<int>& vertices, std::vector<int>& edges);
+	Vertex* const createVertex(Point r);
+	Edge* const createEdge(Vertex* v_1, Vertex* v_2);
+	Cell* const createCell(std::vector<Vertex*>& vertices, std::vector<Edge*>& edges);
 	
-	void destroyVertex(int v);
-	void destroyEdge(int e);
-	void destroyCell(int c);
+	void destroyVertex(Vertex* v);
+	void destroyEdge(Edge* e);
+	void destroyCell(Cell* c);
 		
-	void cellNewVertex(int c, int v, int i); 	//add new vertex to cell vertices at index i
-	void cellRemoveVertex(int c, int v);
-	void cellExchangeVertex(int c, int v_old, int v_new);
+	void cellNewVertex(Cell* c, Vertex* v, int i); 	//add new vertex to cell vertices at index i
+	void cellRemoveVertex(Cell* c, Vertex* v);
+	void cellExchangeVertex(Cell* c, Vertex* v_old, Vertex* v_new);
 	
-	void cellNewEdge(int c, int e, int i); 		//add new edge to cell edges at index i
-	int cellRemoveEdge(int c, int e);
+	void cellNewEdge(Cell* c, Edge* e, int i); 		//add new edge to cell edges at index i
+	int cellRemoveEdge(Cell* c, Edge* e);
 	
-	void cellsFindNeighbours();
-	void verticesFindNeighbours();
-	
-	const double D_angle(int c_i, int c_j) const; 
+	const double D_angle(Cell* c_i, Cell* c_j) const; 
 	
 	void run(int max_timestep);
 	

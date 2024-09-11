@@ -22,10 +22,6 @@ class Cell
 private:
 
 	Tissue* T;
-	int id;
-    std::vector<int> vertices;
-    std::vector<int> edges;
-    std::vector<int> neighbours;
     
     std::vector<Vertex*> vertices_;
     std::vector<Edge*> edges_;
@@ -46,7 +42,7 @@ private:
     
 public:
 
-    Cell(Tissue* T, std::vector<int>& vertices, std::vector<int>& edges);
+    Cell(Tissue* T, std::vector<Vertex*>& vertices, std::vector<Edge*>& edges);
     Cell();
     
     const Point& r_0() const;
@@ -58,19 +54,20 @@ public:
     const double Z() const; 
     const double X() const;
     const double m() const;
-    const std::vector<int>& Vertices() const;
-    const std::vector<int>& Edges() const;
-    const std::vector<int>& Neighbours() const;
+    const std::vector<Vertex*>& vertices() 	const;
+    const std::vector<Edge*>& edges() 		const;
+    const std::vector<Cell*>& neighbours() 	const;
+    
        
-    void addVertex(int v, int i);
-    void removeVertex(int v);
-    void exchangeVertex(int v_old, int v_new);
+    void addVertex(Vertex* v, int i);
+    void removeVertex(Vertex* v);
+    void exchangeVertex(Vertex* v_old, Vertex* v_new);
     void rotateVertices();
     
-    void addEdge(int e, int i);
-    int removeEdge(int e);
+    void addEdge(Edge* e, int i);
+    int removeEdge(Edge* e);
     
-    const bool hasEdge(int e) const;
+    const bool hasEdge(Edge* e) const;
     const bool onBoundary() const;
     void findNeighbours();
     

@@ -22,32 +22,29 @@ class Edge
 private:
 	
 	Tissue* T;
-    int id;
-    int v_1, v_2;
-    Vertex* v_i, v_j;
+    Vertex* v_1; Vertex* v_2;
     double l_; //length
     double T_l_; //line tension
     
-    std::unordered_set<int> cell_junctions;
     std::unordered_set<Cell*> cell_junctions_;
   
 public:
 
-    Edge(Tissue* T, int v1, int v2);
+    Edge(Tissue* T, Vertex* v_1, Vertex* v_2);
     Edge();
     bool operator==(const Edge& other) const;
 
-    const int v1() const; const int v2() const;
+    Vertex* const v1() const; Vertex* const v2() const;
     const double l() const;
     const double T_l() const;
-    const std::unordered_set<int>& cellJunctions() const;
+    const std::unordered_set<Cell*>& cellJunctions() const;
 
-    void addCellJunction(int cell_id);
-    void removeCellJunction(int cell_id);
+    void addCellJunction(Cell* c);
+    void removeCellJunction(Cell* c);
     
-    const bool hasVertex(int v) const;
-    bool swapVertex(int v_old, int v_new); //changes cell vertices
-    bool swapVertex_noedit(int v_old, int v_new);
+    const bool hasVertex(Vertex* v) const;
+    bool swapVertex(Vertex* v_old, Vertex* v_new); //changes cell vertices
+    bool swapVertex_noedit(Vertex* v_old, Vertex* v_new);
     
     void calcLength();
     void calcT_l();

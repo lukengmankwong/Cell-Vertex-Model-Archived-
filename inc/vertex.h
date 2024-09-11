@@ -22,19 +22,15 @@ class Vertex
 private:
 
 	Tissue* T;
-    int id;
     Point r_;
     Vec force_;
     double m_;
     int not_boundary_cell;
     
-    std::unordered_set<int> cell_contacts;
-    std::unordered_set<int> edge_contacts;
-    
     std::unordered_set<Edge*> edge_contacts_;
     std::unordered_set<Cell*> cell_contacts_;
     
-	std::vector<std::pair<int, double>> cell_contacts_ordered;
+	std::vector<std::pair<Cell*, double>> cell_contacts_ordered;
     
     Vec calcSurfaceForce();
     Vec calcLineForce();
@@ -48,14 +44,14 @@ public:
     
     const Point& r() const;
     const double m() const;
-    const std::unordered_set<int>& cellContacts() const;
-    const std::unordered_set<int>& edgeContacts() const;
+    const std::unordered_set<Cell*>& cellContacts() const;
+    const std::unordered_set<Edge*>& edgeContacts() const;
 
-    void addCellContact(int cell_id);
-    void removeCellContact(int cell_id);
+    void addCellContact(Cell* c);
+    void removeCellContact(Cell* c);
     
-    void addEdgeContact(int edge_id);
-    void removeEdgeContact(int edge_id);
+    void addEdgeContact(Edge* e);
+    void removeEdgeContact(Edge* e);
 
     void calcForce();
     void applyForce();

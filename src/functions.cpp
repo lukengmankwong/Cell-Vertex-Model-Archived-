@@ -23,23 +23,25 @@ double random(double min, double max, unsigned int seed)
 
 void writeCellsFile(Tissue* T, const std::string& filename_cells)
 {
-	std::vector<int> vertices = T->vertices();
+	std::vector<Vertex*> vertices = T->vertices();
+	Vertex* v_0 = T->v_0();
 	std::unordered_map<int, int> index_map;
     int index = 0;
-    for (int v : vertices) { index_map[v] = index++; }
+    for (Vertex* v : vertices) { index_map[v-v_0] = index++; }
 
     std::ofstream graphFile(filename_cells);
     graphFile << "# vtk DataFile Version 2.0\nGraph\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << vertices.size() << " float\n";
-    for (int v : vertices) { graphFile << T->vert(v).r().x() << " " << T->vert(v).r().y() << " 0\n"; }
+    for (Vertex* v : vertices) { graphFile << v->r().x() << " " << v->r().y() << " 0\n"; }
     
-    std::vector<int> cells = T->cells();
-    int n = 0; for (int c : cells) { n += T->cell(c).Vertices().size(); }
+    std::vector<Cell*> cells = T->cells();
+    Cell* c_0 = T->c_0();
+    int n = 0; for (Cell* c : cells) { n += c->vertices().size(); }
     n += cells.size();
     graphFile << "CELLS " << cells.size() << " " << n << '\n';
-    for (int c : cells) 
+    for (Cell* c : cells) 
     {
-		graphFile << T->cell(c).Vertices().size() << " ";
-		for (int v : T->cell(c).Vertices()) { graphFile << index_map[v] << " "; }
+		graphFile << c->vertices().size() << " ";
+		for (Vertex* v : c->vertices()) { graphFile << index_map[v-v_0] << " "; }
 		graphFile << '\n';
 	}
 	
@@ -51,23 +53,24 @@ void writeCellsFile(Tissue* T, const std::string& filename_cells)
 
 void writeDirectorsFile(Tissue* T, const std::string& filename_directors)
 {
-	std::vector<int> cells = T->cells();
+	std::vector<Cell*> cells = T->cells();
+	size_t n = cells.size();
 	
 	std::ofstream directorFile(filename_directors);
-    directorFile << "# vtk DataFile Version 2.0\nns\nASCII\nDATASET POLYDATA\nPOINTS " << 2*cells.size() << " float\n";
-    for (int c : cells) 
+    directorFile << "# vtk DataFile Version 2.0\nns\nASCII\nDATASET POLYDATA\nPOINTS " << 2*n << " float\n";
+    for (Cell* c : cells) 
     { 
-		directorFile << (T->cell(c).r_0()-0.5*T->cell(c).n()).x() << " " << (T->cell(c).r_0()-0.5*T->cell(c).n()).y() << " 0\n";
-		directorFile << (T->cell(c).r_0()+0.5*T->cell(c).n()).x() << " " << (T->cell(c).r_0()+0.5*T->cell(c).n()).y() << " 0\n";
+		directorFile << (c->r_0()-0.5*c->n()).x() << " " << (c->r_0()-0.5*c->n()).y() << " 0\n";
+		directorFile << (c->r_0()+0.5*c->n()).x() << " " << (c->r_0()+0.5*c->n()).y() << " 0\n";
 	}
 	
-	directorFile << "LINES " << cells.size() << " " << 3*cells.size() << "\n";
-	for (int i = 0; i < cells.size(); i++) { directorFile << "2 " << 2*i << " " << 2*i+1 << "\n"; }
+	directorFile << "LINES " << n << " " << 3*n << "\n";
+	for (int i = 0; i < n; i++) { directorFile << "2 " << 2*i << " " << 2*i+1 << "\n"; }
 	
 	directorFile.close();
 }
 
-void writeCellDefectsFile(Tissue* T, const std::string& filename_cell_defects)
+/*void writeCellDefectsFile(Tissue* T, const std::string& filename_cell_defects)
 {
 	std::unordered_set<int> defect_vertices;
 	const std::vector<int>& cell_defects = T->cellStepDefects();
@@ -110,4 +113,4 @@ void writeVertexDefectsFile(Tissue* T, const std::string& filename_vertex_defect
     for (int i = 0; i < T->vertexStepDefects().size(); i++) file << "1 " << i << "\n";
         
     file.close();
-}
+}*/

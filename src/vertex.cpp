@@ -2,7 +2,7 @@
 #include "tissue.h"
 
 
-Vertex::Vertex(Tissue* T, Point r) : T(T), id(T->v_c()), r_(r), force_(Vec(0,0)) 
+Vertex::Vertex(Tissue* T, Point r) : T(T), r_(r), force_(Vec(0,0)) 
 { 
 	not_boundary_cell = 1; 
 	cell_contacts_ordered.reserve(8);
@@ -13,9 +13,9 @@ bool Vertex::operator==(const Vertex& other) const { return r_ == other.r_; }
 
 bool Vertex::onBoundaryCell()
 {
-	for (int c : cell_contacts) 
+	for (Cell* c : cell_contacts_) 
 	{
-		if (T->cell(c).onBoundary()) { not_boundary_cell = 0; return true; }
+		if (c->onBoundary()) { not_boundary_cell = 0; return true; }
 	}
 	not_boundary_cell = 1;
 	return false;
@@ -23,33 +23,33 @@ bool Vertex::onBoundaryCell()
 
 const Point& Vertex::r() const { return r_; }
 const double Vertex::m() const { return m_; }
-const std::unordered_set<int>& Vertex::cellContacts() const { return cell_contacts; }
-const std::unordered_set<int>& Vertex::edgeContacts() const { return edge_contacts; }
+const std::unordered_set<Cell*>& Vertex::cellContacts() const { return cell_contacts_; }
+const std::unordered_set<Edge*>& Vertex::edgeContacts() const { return edge_contacts_; }
 
-void Vertex::addCellContact(int cell_id) { cell_contacts.insert(cell_id); }
-void Vertex::removeCellContact(int cell_id) { cell_contacts.erase(cell_id); }
+void Vertex::addCellContact(Cell* c) { cell_contacts_.insert(c); }
+void Vertex::removeCellContact(Cell* c) { cell_contacts_.erase(c); }
 
-void Vertex::addEdgeContact(int edge_id) { edge_contacts.insert(edge_id); }
-void Vertex::removeEdgeContact(int edge_id) 
+void Vertex::addEdgeContact(Edge* e) { edge_contacts_.insert(e); }
+void Vertex::removeEdgeContact(Edge* e) 
 {
-	edge_contacts.erase(edge_id);
-	if (edge_contacts.size() == 0) T->destroyVertex(id);
+	edge_contacts_.erase(e);
+	if (edge_contacts_.size() == 0) T->destroyVertex(this);
 }
 
 
 Vec Vertex::calcSurfaceForce()
 {
 	Vec f_A(0,0);
-	for (int c : cell_contacts) 
+	for (Cell* c : cell_contacts_) 
 	{
-		const std::vector<int>& c_vertices = T->cell(c).Vertices();
-		int n = c_vertices.size(); int S = T->cell(c).S();
-		auto it = std::find(c_vertices.begin(), c_vertices.end(), id);
+		const std::vector<Vertex*>& c_vertices = c->vertices();
+		int n = c_vertices.size(); int S = c->S();
+		std::vector<Vertex*>::const_iterator it = std::find(c_vertices.begin(), c_vertices.end(), this);
 		int j = std::distance(c_vertices.begin(), it);
 		
-		double dAdx = S*0.5*(T->vert(c_vertices[(j+1)%n]).r().y() - T->vert(c_vertices[(j-1+n)%n]).r().y());
-		double dAdy = S*0.5*(T->vert(c_vertices[(j-1+n)%n]).r().x() - T->vert(c_vertices[(j+1)%n]).r().x());
-		f_A -= T->cell(c).T_A()*Vec(dAdx, dAdy);
+		double dAdx = S*0.5*(c_vertices[(j+1)%n]->r().y() - c_vertices[(j-1+n)%n]->r().y());
+		double dAdy = S*0.5*(c_vertices[(j-1+n)%n]->r().x() - c_vertices[(j+1)%n]->r().x());
+		f_A -= c->T_A()*Vec(dAdx, dAdy);
 	}
 	return f_A;
 }
@@ -57,16 +57,16 @@ Vec Vertex::calcSurfaceForce()
 Vec Vertex::calcLineForce()
 {
 	Vec f_L(0,0);
-	for (int e : edge_contacts)
+	for (Edge* e : edge_contacts_)
 	{
-		int v_; //other vertex in edge
-		(id == T->edge(e).v1()) ? v_ = T->edge(e).v2() : v_ = T->edge(e).v1();
+		Vertex* v; //other vertex in edge
+		(this == e->v1()) ? v = e->v2() : v = e->v1();
 		
-		double x_diff = r_.x() - T->vert(v_).r().x();
-		double y_diff = r_.y() - T->vert(v_).r().y();
+		double x_diff = r_.x() - v->r().x();
+		double y_diff = r_.y() - v->r().y();
 		double dldx = x_diff/std::sqrt(x_diff*x_diff+y_diff*y_diff);
 		double dldy = y_diff/std::sqrt(x_diff*x_diff+y_diff*y_diff);
-		f_L -= T->edge(e).T_l()*Vec(dldx, dldy);
+		f_L -= e->T_l()*Vec(dldx, dldy);
 	}
 	return f_L;
 }
@@ -78,91 +78,93 @@ void Vertex::shearForce() { force_ = Vec(-r_.y(),r_.x()); } //anticlockwise shea
 
 void Vertex::orderCellContacts()
 {
-	std::vector<std::pair<int, double>> contacts;
-	for (int c : cell_contacts) 
+	std::vector<std::pair<Cell*, double>> contacts;
+	for (Cell* c : cell_contacts_) 
 	{
-		T->cell(c).calcR_0();
-		Vec vec = T->cell(c).r_0()-r_;
+		c->calcR_0();
+		Vec vec = c->r_0()-r_;
 		double theta = std::atan2(vec.y(), vec.x());
 		contacts.push_back({c,theta});
 	}
 	
 	std::sort(contacts.begin(), contacts.end(), 
-		[](const std::pair<int, double>& c1, const std::pair<int, double>& c2) { return c1.second < c2.second; });
+		[](const std::pair<Cell*, double>& c1, const std::pair<Cell*, double>& c2) { return c1.second < c2.second; });
 	cell_contacts_ordered = contacts;
 }
 
 void Vertex::T1split()
 {
-	if (cell_contacts.size() != 4 || edge_contacts.size() != 4) return;
-	for (int c : cell_contacts) if (T->cell(c).onBoundary()) return; 
+	if (cell_contacts_.size() != 4 || edge_contacts_.size() != 4) return;
+	for (Cell* c : cell_contacts_) if (c->onBoundary()) return; 
 	
 	//std::cout << "vertex id: " << id << '\n';
 	//affected cells, a,b change vertex p,q gets new edge
 	orderCellContacts();
-	const int c_a = cell_contacts_ordered[0].first; const int c_b = cell_contacts_ordered[2].first;
-	const int c_p = cell_contacts_ordered[1].first; const int c_q = cell_contacts_ordered[3].first;
+	Cell* const c_a = cell_contacts_ordered[0].first; Cell* const c_b = cell_contacts_ordered[2].first;
+	Cell* const c_p = cell_contacts_ordered[1].first; Cell* const c_q = cell_contacts_ordered[3].first;
 	/*std::cout << "BEFORE\n";
 	T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();	
 	T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
 
-	const std::vector<int>& vertices_p = T->cell(c_p).Vertices();
-	auto it_id = std::find(vertices_p.begin(), vertices_p.end(), id);
-	int i = std::distance(vertices_p.begin(), it_id);
+	const std::vector<Vertex*>& c_p_vertices = c_p->vertices();
+	auto it_id = std::find(c_p_vertices.begin(), c_p_vertices.end(), this);
+	int i = std::distance(c_p_vertices.begin(), it_id);
 	/*std::cout << "MIDDLE\n";
 	T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();
 	T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
 
-	int v_a, v_b; //new vertices
-	auto updateAB = [this](const int c_x, int& v_x)
+	Vertex* v_a = nullptr; //new vertices
+	Vertex* v_b = nullptr;
+	auto updateAB = [this](Cell* const c_x, Vertex*& v_x)
 	{
 		//find position of and create vertex
-		T->cell(c_x).calcR_0();
-		Vec vec_x = T->cell(c_x).r_0() - r_;
+		c_x->calcR_0();
+		Vec vec_x = c_x->r_0() - r_;
 		Point x = r_ + 0.1*vec_x;
 		v_x = T->createVertex(x);
 
 		//attatch relevent edges to vertex
-		for (int e : T->cell(c_x).Edges()) T->edge(e).swapVertex(id, v_x);
-		if (!(T->cell(c_x).valid())) T->cell(c_x).rotateVertices();
+		for (Edge* e : c_x->edges()) e->swapVertex(this, v_x);
+		if (!(c_x->valid())) c_x->rotateVertices();
 	};
 	updateAB(c_a, v_a); updateAB(c_b, v_b);
 
 	//edge that vertex is split into
-	const int e_new = T->createEdge(v_a, v_b);
+	Edge* const e_new = T->createEdge(v_a, v_b);
 
 	//update edges for cells p, q
-	auto updateEdges = [this, c_a, c_b, v_a, v_b, e_new](const int c_x)
+	auto updateEdges = [this, c_a, c_b, v_a, v_b, e_new](Cell* const c_x)
 	{
-		const std::vector<int>& vertices_c_x = T->cell(c_x).Vertices();
-		const std::vector<int>& edges_c_x = T->cell(c_x).Edges();
-		for (int i = 0; i < edges_c_x.size(); i++)
+		const std::vector<Vertex*>& c_x_vertices = c_x->vertices();
+		const std::vector<Edge*>& c_x_edges = c_x->edges();
+		size_t n = c_x_edges.size();
+		for (int i = 0; i < n; i++)
 		{
-			if (T->edge(edges_c_x[i]).hasVertex(v_a) && T->edge(edges_c_x[(i+1)%edges_c_x.size()]).hasVertex(v_b))
+			if (c_x_edges[i]->hasVertex(v_a) && c_x_edges[(i+1)%n]->hasVertex(v_b))
 			{
-				T->cellNewEdge(c_x,e_new, i+1);
+				T->cellNewEdge(c_x, e_new, i+1);
 				break;
 			}
-			else if (T->edge(edges_c_x[i]).hasVertex(v_b) && T->edge(edges_c_x[(i+1)%edges_c_x.size()]).hasVertex(v_a))
+			else if (c_x_edges[i]->hasVertex(v_b) && c_x_edges[(i+1)%n]->hasVertex(v_a))
 			{
-				T->cellNewEdge(c_x,e_new, i+1);
+				T->cellNewEdge(c_x, e_new, i+1);
 				break;
 			}
 		}		
 	};
 	updateEdges(c_p); updateEdges(c_q);
 	
-	auto updateVertices = [this, c_a, c_b, v_a, v_b, e_new](const int c_x, bool before)
+	auto updateVertices = [this, c_a, c_b, v_a, v_b, e_new](Cell* const c_x, bool before)
 	{
-		const std::vector<int>& vertices = T->cell(c_x).Vertices();
-		std::vector<int>::const_iterator it_va = std::find(vertices.begin(), vertices.end(), v_a);
+		const std::vector<Vertex*>& c_x_vertices = c_x->vertices();
+		std::vector<Vertex*>::const_iterator it_va = std::find(c_x_vertices.begin(), c_x_vertices.end(), v_a);
 		
-		if (it_va != vertices.end())
+		if (it_va != c_x_vertices.end())
 		{
-			int i = std::distance(vertices.begin(), it_va);
+			int i = std::distance(c_x_vertices.begin(), it_va);
 			if (before) T->cellNewVertex(c_x, v_b, i);
 			else T->cellNewVertex(c_x, v_b, i+1);
-			while (!(T->cell(c_x).valid())) T->cell(c_x).rotateVertices();
+			while (!(c_x->valid())) c_x->rotateVertices();
 		}
 	};
 	updateVertices(c_p, true); updateVertices(c_q, false);
@@ -174,16 +176,17 @@ void Vertex::T1split()
 	std::cout << "END\n";
 	T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices(); 
 	T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
-	T->destroyVertex(id);
-	T->vert(v_a).orderCellContacts(); T->vert(v_b).orderCellContacts();
-	for (int c : T->vert(v_a).cellContacts()) T->cell(c).findNeighbours(); for (int c : T->vert(v_b).cellContacts()) T->cell(c).findNeighbours();
+	T->destroyVertex(this);
+	v_a->orderCellContacts(); v_b->orderCellContacts();
+	for (Cell* c : v_a->cellContacts()) c->findNeighbours(); 
+	for (Cell* c : v_b->cellContacts()) c->findNeighbours();
 	std::cout << "T1 split\n";
 }
 
 void Vertex::calcm()
 {
 	//cell order already known
-	size_t n = cell_contacts.size();
+	size_t n = cell_contacts_.size();
 	double w = 0;
 	for (int i = 0; i < n; i++) w += T->D_angle(cell_contacts_ordered[i].first, cell_contacts_ordered[(i+1)%n].first);
 	m_ = w*boost::math::constants::one_div_two_pi <double>();
