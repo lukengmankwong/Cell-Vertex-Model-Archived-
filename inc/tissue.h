@@ -20,26 +20,33 @@ class Tissue
 {
 private:
 
-	std::array<Vertex, V_ARR_SIZE> v_arr; 	Vertex* v_c_;
-	std::array<Edge, E_ARR_SIZE> e_arr; 	Edge* e_c_;
-	std::array<Cell, C_ARR_SIZE> c_arr;		Cell* c_c_;
+	std::array<Vertex, V_ARR_SIZE> v_arr;
+	std::array<Edge, E_ARR_SIZE> e_arr;
+	std::array<Cell, C_ARR_SIZE> c_arr;
 	std::array<bool, V_ARR_SIZE> v_in;
 	std::array<bool, E_ARR_SIZE> e_in;
 	std::array<bool, C_ARR_SIZE> c_in;
 	
-	Vertex* v_0_;
-	Edge* e_0_;
-	Cell* c_0_;
+	Vertex* v_0_; Vertex* v_c_;
+	Edge* e_0_; Edge* e_c_;
+	Cell* c_0_; Cell* c_c_;
+	
+	std::vector<Cell*> c_def_PLUSHALF_;
+	std::vector<Cell*> c_def_PLUSONE_;
+	std::vector<Cell*> c_def_MINUSHALF_;
+	std::vector<Cell*> c_def_MINUSONE_;
+	std::vector<Vertex*> v_def_PLUSHALF_;
+	std::vector<Vertex*> v_def_PLUSONE_;
+	std::vector<Vertex*> v_def_MINUSHALF_;
+	std::vector<Vertex*> v_def_MINUSONE_;
 	
 	int timestep;
-	std::vector<int> cell_defects;
-	std::vector<int> vertex_defects;
 	
 	void extrusion();
 	void division();
 	void transitions();
 	void T1();
-	void addDefects();
+	void findDefects();
 	
 public:
 
@@ -55,9 +62,15 @@ public:
     Vertex* const v_c() const; Vertex* const v_0() const;
     Edge* const e_c() const; Edge* const e_0() const;
     Cell* const c_c() const; Cell* const c_0() const;
-    
-    const std::vector<int>& cellStepDefects() const;
-    const std::vector<int>& vertexStepDefects() const;
+
+	const std::vector<Cell*>& c_def_PLUSHALF() const;
+	const std::vector<Cell*>& c_def_PLUSONE() const;
+	const std::vector<Cell*>& c_def_MINUSHALF() const;
+	const std::vector<Cell*>& c_def_MINUSONE() const;
+	const std::vector<Vertex*>& v_def_PLUSHALF() const;
+	const std::vector<Vertex*>& v_def_PLUSONE() const;
+	const std::vector<Vertex*>& v_def_MINUSHALF() const;
+	const std::vector<Vertex*>& v_def_MINUSONE() const;
     
 	Vertex* const createVertex(Point r);
 	Edge* const createEdge(Vertex* v_1, Vertex* v_2);

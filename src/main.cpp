@@ -46,22 +46,21 @@ std::vector<Point> hexagonalWithNoise(unsigned int n, double g)
 
 int main() 
 {
-	unsigned int cell_count = 1200;
-    //std::vector<Point> points = hexagonalWithNoise(cell_count, 0.1);
-    std::vector<Point> points = randomPoints(cell_count);
+	unsigned int cell_count = 2800;
+    std::vector<Point> points = hexagonalWithNoise(cell_count, 0.4);
+    //std::vector<Point> points = randomPoints(cell_count);
     DT delauney_tri; 
     delauney_tri.insert(points.begin(), points.end()); 		//Delauney triangulation from points
     VD voronoi_diagram(delauney_tri); 						//Voronoi diagram dual to Delauney triangulation
 
 	auto t_start1 = std::chrono::high_resolution_clock::now();
-	Tissue T = Tissue(voronoi_diagram, square);
+	Tissue T = Tissue(voronoi_diagram, circle);
     auto t_end1 = std::chrono::high_resolution_clock::now();
-    //outputData(T);
     std::cout << "DATA COLLECTED IN " << std::chrono::duration<double, std::milli>(t_end1 - t_start1).count()/1000 << "s\n";
 
     std::cout << "\nPRESS ENTER TO RUN SIMULATION"; std::cin.get();
     auto t_start2 = std::chrono::high_resolution_clock::now();
-    T.run(10000);
+    T.run(100000);
     auto t_end2 = std::chrono::high_resolution_clock::now();
 
     std::cout << "SIMULATION RAN IN " << std::chrono::duration<double, std::milli>(t_end2 - t_start2).count()/1000 << "s\n";

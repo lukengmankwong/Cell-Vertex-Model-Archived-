@@ -21,7 +21,7 @@ void outputData(const Tissue& Tissue);
 
 void writeCellsFile(Tissue* T, const std::string& filename_cells);
 void writeDirectorsFile(Tissue* T, const std::string& filename_directors);
-void writeCellDefectsFile(Tissue* T, const std::string& filename_cell_defects);
-void writeVertexDefectsFile(Tissue* T, const std::string& filename_vertex_defects);
+void writeCellDefectsFile(Tissue* T, const std::vector<Cell*>& c_def, const std::string& filename_c_def);
+void writeVertexDefectsFile(Tissue* T, const std::vector<Vertex*>& v_def, const std::string& filename_v_def);
 
 #endif // FUNCTIONS_H

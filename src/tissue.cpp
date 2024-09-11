@@ -100,7 +100,6 @@ Tissue::~Tissue() {}
 
 const bool Tissue::v_alive(Vertex* v) const { return v_in[v-v_0_]; }
 
-
 std::vector<Vertex*> Tissue::vertices()
 {
 	std::vector<Vertex*> vertices;
@@ -120,7 +119,6 @@ std::vector<Cell*> Tissue::cells()
 	return cells;
 }
 
-
 Vertex* const Tissue::v_0() const { return v_0_; }
 Edge* const Tissue::e_0() const { return e_0_; }
 Cell* const Tissue::c_0() const { return c_0_; }
@@ -128,26 +126,48 @@ Vertex* const Tissue::v_c() const { return v_c_; }
 Edge* const Tissue::e_c() const { return e_c_; }
 Cell* const Tissue::c_c() const { return c_c_; }
 
-const std::vector<int>& Tissue::cellStepDefects() const { return cell_defects; }
-const std::vector<int>& Tissue::vertexStepDefects() const { return vertex_defects; }
+const std::vector<Cell*>& Tissue::c_def_PLUSHALF() const { return c_def_PLUSHALF_; }
+const std::vector<Cell*>& Tissue::c_def_PLUSONE() const { return c_def_PLUSONE_; }
+const std::vector<Cell*>& Tissue::c_def_MINUSHALF() const { return c_def_MINUSHALF_; }
+const std::vector<Cell*>& Tissue::c_def_MINUSONE() const { return c_def_MINUSONE_; }
+const std::vector<Vertex*>& Tissue::v_def_PLUSHALF() const { return v_def_PLUSHALF_; }
+const std::vector<Vertex*>& Tissue::v_def_PLUSONE() const { return v_def_PLUSONE_; }
+const std::vector<Vertex*>& Tissue::v_def_MINUSHALF() const { return v_def_MINUSHALF_; }
+const std::vector<Vertex*>& Tissue::v_def_MINUSONE() const { return v_def_MINUSONE_; }
 
-void Tissue::addDefects()
+void Tissue::findDefects()
 {
-	std::vector<int> cell_step_defects;
-	for (int c = 0; c < c_c_-c_0_; c++) {
-		if (c_in[c]) {
-			if (std::fabs(c_arr[c].m()-0.5) < 1e-3 || std::fabs(c_arr[c].m()+0.5) < 1e-3
-				|| std::fabs(c_arr[c].m()-1) < 1e-3 || std::fabs(c_arr[c].m()+1) < 1e-3) cell_step_defects.push_back(c);
+	c_def_PLUSHALF_ = {};
+	c_def_PLUSONE_ = {};
+	c_def_MINUSHALF_ = {};
+	c_def_MINUSONE_ = {};
+	for (Cell* c = c_0_; c < c_c_; c++)
+	{
+		if (c_in[c-c_0_])
+		{
+			double m = c->m();
+			if 		(std::fabs(m - 0.5) < 1e-3) c_def_PLUSHALF_.push_back(c); 
+			else if (std::fabs(m - 1) < 1e-3) c_def_PLUSONE_.push_back(c); 
+			else if (std::fabs(m + 0.5) < 1e-3) c_def_MINUSHALF_.push_back(c); 
+			else if (std::fabs(m + 1) < 1e-3) c_def_MINUSONE_.push_back(c); 
 		}
-	} cell_defects = cell_step_defects;
+	}
 	
-	std::vector<int> vertex_step_defects;
-	for (int v = 0; v < v_c_-v_0_; v++) {
-		if (v_in[v]) {
-			if (std::fabs(v_arr[v].m()-0.5) < 1e-3 || std::fabs(v_arr[v].m()+0.5) < 1e-3
-				|| std::fabs(v_arr[v].m()-1) < 1e-3 || std::fabs(v_arr[v].m()+1) < 1e-3) vertex_step_defects.push_back(v);
-		} 
-	} vertex_defects = vertex_step_defects;
+	v_def_PLUSHALF_ = {};
+	v_def_PLUSONE_ = {};
+	v_def_MINUSHALF_ = {};
+	v_def_MINUSONE_ = {};
+	for (Vertex* v = v_0_; v < v_c_; v++)
+	{
+		if (v_in[v-v_0_])
+		{
+			double m = v->m();
+			if 		(std::fabs(m - 0.5) < 1e-3) v_def_PLUSHALF_.push_back(v); 
+			else if (std::fabs(m - 1) < 1e-3) v_def_PLUSONE_.push_back(v); 
+			else if (std::fabs(m + 0.5) < 1e-3) v_def_MINUSHALF_.push_back(v); 
+			else if (std::fabs(m + 1) < 1e-3) v_def_MINUSONE_.push_back(v); 
+		}
+	}
 }
 
 Vertex* const Tissue::createVertex(Point r)
@@ -307,13 +327,21 @@ void Tissue::run(int max_timestep)
         
 		if (timestep % 10 == 0)
 		{
-			for (int c = 0; c < c_c_-c_0_; c++) if (c_in[c]) c_arr[c].calcm();
-			for (int v = 0; v < v_c_-v_0_; v++) if (v_in[v]) v_arr[v].calcm();
-			addDefects();
 			writeCellsFile(this, "cells" + std::to_string(timestep) + ".vtk");
 			writeDirectorsFile(this, "directors" + std::to_string(timestep) + ".vtk");
-			//writeCellDefectsFile(this, "cell defects" + std::to_string(timestep) + ".vtk");
-			//writeVertexDefectsFile(this, "vertex defects" + std::to_string(timestep) + ".vtk");
+			
+			for (int c = 0; c < c_c_-c_0_; c++) if (c_in[c]) c_arr[c].calcm();
+			for (int v = 0; v < v_c_-v_0_; v++) if (v_in[v]) v_arr[v].calcm();
+			findDefects();
+			
+			writeCellDefectsFile(this, c_def_PLUSHALF_, "cell defects PLUSHALF" + std::to_string(timestep) + ".vtk");
+			writeCellDefectsFile(this, c_def_PLUSONE_, "cell defects PLUSONE" + std::to_string(timestep) + ".vtk");
+			writeCellDefectsFile(this, c_def_MINUSHALF_, "cell defects MINUSHALF" + std::to_string(timestep) + ".vtk");
+			writeCellDefectsFile(this, c_def_MINUSONE_, "cell defects MINUSONE" + std::to_string(timestep) + ".vtk");
+			writeVertexDefectsFile(this, v_def_PLUSHALF_, "vertex defects PLUSHALF" + std::to_string(timestep) + ".vtk");
+			writeVertexDefectsFile(this, v_def_PLUSONE_, "vertex defects PLUSONE" + std::to_string(timestep) + ".vtk");
+			writeVertexDefectsFile(this, v_def_MINUSHALF_, "vertex defects MINUSHALF" + std::to_string(timestep) + ".vtk");
+			writeVertexDefectsFile(this, v_def_MINUSONE_, "vertex defects MINUSONE" + std::to_string(timestep) + ".vtk");
 		}
 		T1();
         timestep++;	

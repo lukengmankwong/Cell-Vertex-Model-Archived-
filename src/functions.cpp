@@ -70,47 +70,47 @@ void writeDirectorsFile(Tissue* T, const std::string& filename_directors)
 	directorFile.close();
 }
 
-/*void writeCellDefectsFile(Tissue* T, const std::string& filename_cell_defects)
+void writeCellDefectsFile(Tissue* T, const std::vector<Cell*>& c_def, const std::string& filename_c_def)
 {
-	std::unordered_set<int> defect_vertices;
-	const std::vector<int>& cell_defects = T->cellStepDefects();
-	for (int c : cell_defects) { defect_vertices.insert(T->cell(c).Vertices().begin(), T->cell(c).Vertices().end()); }
+	std::unordered_set<Vertex*> def_vertices;
+	for (Cell* c : c_def) { def_vertices.insert(c->vertices().begin(), c->vertices().end()); }
 			
 	std::unordered_map<int, int> index_map;
-	int index = 0;
-	for (int v : defect_vertices) { index_map[v] = index++; }
+	int index = 0; Vertex* v_0 = T->v_0();
+	for (Vertex* v : def_vertices) { index_map[v-v_0] = index++; }
 		
-	std::ofstream defectFile(filename_cell_defects);
-	defectFile << "# vtk DataFile Version 2.0\nDefect\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << defect_vertices.size() << " float\n";
-	for (int v : defect_vertices) { defectFile << T->vert(v).r().x() << " " << T->vert(v).r().y() << " 0\n"; }
+	std::ofstream defectFile(filename_c_def);
+	defectFile << "# vtk DataFile Version 2.0\nDefect\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS " << def_vertices.size() << " float\n";
+	for (Vertex* v : def_vertices) { defectFile << v->r().x() << " " << v->r().y() << " 0\n"; }
 
 	int n = 0; 
-	for (int c : cell_defects) { n += T->cell(c).Vertices().size(); }
-	n += cell_defects.size();
+	for (Cell* c : c_def) { n += c->vertices().size(); }
+	n += c_def.size();
 
-	defectFile << "CELLS " << cell_defects.size() << " " << n << '\n';
-	for (int c : cell_defects) 
+	defectFile << "CELLS " << c_def.size() << " " << n << '\n';
+	for (Cell* c : c_def) 
 	{
-		defectFile << T->cell(c).Vertices().size() << " ";
-		for (int v : T->cell(c).Vertices()) { defectFile << index_map[v] << " "; }
+		defectFile << c->vertices().size() << " ";
+		for (Vertex* v : c->vertices()) { defectFile << index_map[v-v_0] << " "; }
 		defectFile << '\n'; 
 	}
 		
-	defectFile << "CELL_TYPES " << cell_defects.size() << '\n';
-	for (int c = 0; c < cell_defects.size(); c++) { defectFile << "7\n"; }
+	defectFile << "CELL_TYPES " << c_def.size() << '\n';
+	for (int c = 0; c < c_def.size(); c++) { defectFile << "7\n"; }
 		   
 	defectFile.close();
 }
 
-void writeVertexDefectsFile(Tissue* T, const std::string& filename_vertex_defects)
+void writeVertexDefectsFile(Tissue* T, const std::vector<Vertex*>& v_def, const std::string& filename_v_def)
 {
-	std::ofstream file(filename_vertex_defects);
+	std::ofstream file(filename_v_def);
+	size_t n = v_def.size();
     file << "# vtk DataFile Version 2.0\nPoint data\nASCII\nDATASET POLYDATA\n";
-    file << "POINTS " << T->vertexStepDefects().size() << " float\n";
-    for (int v : T->vertexStepDefects()) file << T->vert(v).r().x() << " " << T->vert(v).r().y() << " 0\n";
+    file << "POINTS " << n << " float\n";
+    for (Vertex* v : v_def) file << v->r().x() << " " << v->r().y() << " 0\n";
     
-    file << "VERTICES " << T->vertexStepDefects().size() << " " << 2 * T->vertexStepDefects().size() << "\n";
-    for (int i = 0; i < T->vertexStepDefects().size(); i++) file << "1 " << i << "\n";
+    file << "VERTICES " << n << " " << 2 * n << "\n";
+    for (int i = 0; i < n; i++) file << "1 " << i << "\n";
         
     file.close();
-}*/
+}
