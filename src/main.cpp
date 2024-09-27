@@ -20,7 +20,7 @@ bool square(const Point& p)		{ return std::fabs(p.x()) < std::sqrt(1000)/2 && st
 bool unbound(const Point& p) 	{ return true; }
 bool circle(const Point& p) 	{ return (p.x()-0)*(p.x()-0) + (p.y()-0)*(p.y()-0) < 700; }
 
-//some example cell voronoi seeds
+//some example voronoi seeds
 std::vector<Point> randomPoints(unsigned int n) 
 { 
 	std::vector<Point> points;
@@ -47,22 +47,33 @@ std::vector<Point> hexagonalWithNoise(unsigned int n, double g)
 int main() 
 {
 	unsigned int cell_count = 2800;
-    std::vector<Point> points = hexagonalWithNoise(cell_count, 0.4);
+    std::vector<Point> points = hexagonalWithNoise(cell_count, 0.1);
     //std::vector<Point> points = randomPoints(cell_count);
     DT delauney_tri; 
     delauney_tri.insert(points.begin(), points.end()); 		//Delauney triangulation from points
     VD voronoi_diagram(delauney_tri); 						//Voronoi diagram dual to Delauney triangulation
 
-	auto t_start1 = std::chrono::high_resolution_clock::now();
+	/*auto t_start1 = std::chrono::high_resolution_clock::now();
 	Tissue T = Tissue(voronoi_diagram, circle);
     auto t_end1 = std::chrono::high_resolution_clock::now();
-    std::cout << "DATA COLLECTED IN " << std::chrono::duration<double, std::milli>(t_end1 - t_start1).count()/1000 << "s\n";
-
-    std::cout << "\nPRESS ENTER TO RUN SIMULATION"; std::cin.get();
+    std::cout << "DATA COLLECTED IN " << std::chrono::duration<double, std::milli>(t_end1 - t_start1).count()/1000 << "s\n";*/
+    
+    unsigned int timesteps = 100000;
+    param::set_GAMMA(0.2);
+    param::set_LAMBDA(-0.2);
+    int i = 0;
+    for (double LAMBDA = -0.5; LAMBDA < 0.21; LAMBDA += 0.1)
+    {
+		Tissue T = Tissue(voronoi_diagram, circle);
+		param::set_LAMBDA(LAMBDA);
+		T.run(timesteps, std::to_string(i));
+		i++;
+		std::cout << LAMBDA << " run success\n";
+	}
+    /*std::cout << "\nPRESS ENTER TO RUN SIMULATION"; std::cin.get();
     auto t_start2 = std::chrono::high_resolution_clock::now();
-    T.run(100000);
+    T.run(timesteps, "");
     auto t_end2 = std::chrono::high_resolution_clock::now();
-
-    std::cout << "SIMULATION RAN IN " << std::chrono::duration<double, std::milli>(t_end2 - t_start2).count()/1000 << "s\n";
+    std::cout << "SIMULATION RAN IN " << std::chrono::duration<double, std::milli>(t_end2 - t_start2).count()/1000 << "s\n";*/
     return 0;
 }

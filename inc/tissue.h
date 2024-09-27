@@ -40,6 +40,12 @@ private:
 	std::vector<Vertex*> v_def_MINUSHALF_;
 	std::vector<Vertex*> v_def_MINUSONE_;
 	
+	std::array<unsigned short, 100000> def_PLUSHALF_c;
+	std::array<unsigned short, 100000> def_PLUSONE_c;
+	std::array<unsigned short, 100000> def_MINUSHALF_c;
+	std::array<unsigned short, 100000> def_MINUSONE_c;
+	
+	
 	int timestep;
 	
 	void extrusion();
@@ -47,6 +53,7 @@ private:
 	void transitions();
 	void T1();
 	void findDefects();
+	void countDefects();
 	
 public:
 
@@ -89,7 +96,7 @@ public:
 	
 	const double D_angle(Cell* c_i, Cell* c_j) const; 
 	
-	void run(int max_timestep);
+	void run(int max_timestep, std::string title);
 	
 };
 

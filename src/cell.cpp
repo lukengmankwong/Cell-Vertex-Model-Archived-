@@ -161,8 +161,7 @@ void Cell::extrude()
 		Edge* e = *(v->edgeContacts().begin());				//only element left in the vertex edge_contacts (incident edge)
 		e->swapVertex(v, v_new);							//reconnect incident edges so that they meet at r_0, this deletes the old vertex and tells cells it no longer has this vertex
 	}
-	//for (int c : T->vert(v_new).cellContacts()) { if (!(T->cell(c).valid())) { T->cell(c).outputVertices(); T->cell(c).outputEdgeVertices(); } }
-	for (Cell* c : v_new->cellContacts()) { if (!(c->valid())) { c->rotateVertices(); } }//T->cell(c).outputVertices(); T->cell(c).outputEdgeVertices(); }
+	for (Cell* c : v_new->cellContacts()) while (!(c->valid())) c->rotateVertices();
 	
 	
 	std::vector<Cell*> neighbours_copy = neighbours_;

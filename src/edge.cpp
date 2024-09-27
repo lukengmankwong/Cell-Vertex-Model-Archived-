@@ -78,7 +78,7 @@ void Edge::calcT_l()
 }
 
 
-void Edge::T1() //problem with order of v_p and v_q;
+void Edge::T1()
 {
 	if (cell_junctions_.size() != 2) return;
 	if (v_1->cellContacts().size() != 3 || v_2->cellContacts().size() != 3) return;
@@ -92,15 +92,9 @@ void Edge::T1() //problem with order of v_p and v_q;
 	const std::unordered_set<Edge*> v_1_edges = v_1->edgeContacts();
 	const std::unordered_set<Edge*> v_2_edges = v_2->edgeContacts();
 	
-	auto other_cell = [this, cellsAB](Vertex* const v) 
-	{ 
-		for (Cell* c : v->cellContacts()) if (cellsAB.find(c) == cellsAB.end()) return c; 
-	};
+	auto other_cell = [this, cellsAB](Vertex* const v) { for (Cell* c : v->cellContacts()) if (cellsAB.find(c) == cellsAB.end()) return c; };
 	Cell* const c_p = other_cell(v_1);
 	Cell* const c_q = other_cell(v_2);
-	
-	/*std::cout << "Cell P:\n"; T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();
-	std::cout << "Cell Q:\n"; T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
 	
 	//create new vertices
 	Point cen = CGAL::midpoint(v_1->r(), v_2->r());
@@ -127,18 +121,12 @@ void Edge::T1() //problem with order of v_p and v_q;
 		T->cellRemoveEdge(c_x, this);
 	};
 	edgeToVertex(c_a, v_a); edgeToVertex(c_b, v_b);
-	/*std::cout << "Cell P:\n"; T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();
-	std::cout << "Cell Q:\n"; T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();
-	std::cout << "Cell A:\n"; T->cell(c_a).outputVertices(); T->cell(c_a).outputEdgeVertices();
-	std::cout << "Cell B:\n"; T->cell(c_b).outputVertices(); T->cell(c_b).outputEdgeVertices();*/
 	
 	auto VertexToEdge = [this, c_a, c_b, v_a, v_b, e_new](Cell* const c_x, const std::unordered_set<Edge*>& v_edges)
 	{
 		const std::vector<Vertex*>& c_x_vertices = c_x->vertices();
 		std::vector<Vertex*>::const_iterator it_v_a = std::find(c_x_vertices.begin(), c_x_vertices.end(), v_a);
 		int i_v_a = std::distance(c_x_vertices.begin(), it_v_a);
-		
-		//std::cout << i_v_a << ' ' << vertices.size()-1 << '\n';
 		
 		Edge* e_a = nullptr; Edge* e_b = nullptr;
 		for (Edge* e : v_edges)
@@ -165,17 +153,9 @@ void Edge::T1() //problem with order of v_p and v_q;
 		}
 	};
 	VertexToEdge(c_p, v_1_edges); VertexToEdge(c_q, v_2_edges);
-
-	/*std::cout << "Cell P:\n"; T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();
-	std::cout << "Cell Q:\n"; T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();
-	if (!(T->cell(c_p).valid())) { std::cout << "P invalid\n"; std::cin.get(); }
-	if (!(T->cell(c_q).valid())) { std::cout << "Q invalid\n"; std::cin.get(); }*/
+	
 	while (!(c_p->valid())) { c_p->rotateVertices(); }
 	while (!(c_q->valid())) { c_q->rotateVertices(); }
-	/*if (!(T->cell(c_p).valid())) { std::cout << "P invalid\n"; std::cin.get(); }
-	if (!(T->cell(c_q).valid())) { std::cout << "Q invalid\n"; std::cin.get(); }
-	std::cout << "Cell P:\n"; T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();
-	std::cout << "Cell Q:\n"; T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
 	v_a->orderCellContacts(); v_b->orderCellContacts();
 	std::cout << "T1\n";
 }

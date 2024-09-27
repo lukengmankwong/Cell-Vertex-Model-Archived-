@@ -97,23 +97,17 @@ void Vertex::T1split()
 	if (cell_contacts_.size() != 4 || edge_contacts_.size() != 4) return;
 	for (Cell* c : cell_contacts_) if (c->onBoundary()) return; 
 	
-	//std::cout << "vertex id: " << id << '\n';
 	//affected cells, a,b change vertex p,q gets new edge
 	orderCellContacts();
 	Cell* const c_a = cell_contacts_ordered[0].first; Cell* const c_b = cell_contacts_ordered[2].first;
 	Cell* const c_p = cell_contacts_ordered[1].first; Cell* const c_q = cell_contacts_ordered[3].first;
-	/*std::cout << "BEFORE\n";
-	T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();	
-	T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
 
 	const std::vector<Vertex*>& c_p_vertices = c_p->vertices();
 	auto it_id = std::find(c_p_vertices.begin(), c_p_vertices.end(), this);
 	int i = std::distance(c_p_vertices.begin(), it_id);
-	/*std::cout << "MIDDLE\n";
-	T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices();
-	T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
-
-	Vertex* v_a = nullptr; //new vertices
+	
+	//new vertices
+	Vertex* v_a = nullptr; 
 	Vertex* v_b = nullptr;
 	auto updateAB = [this](Cell* const c_x, Vertex*& v_x)
 	{
@@ -168,19 +162,12 @@ void Vertex::T1split()
 		}
 	};
 	updateVertices(c_p, true); updateVertices(c_q, false);
-	/*if (!(T->cell(c_a).valid())) { std::cout << "a invalid\n"; std::cin.get(); }
-	if (!(T->cell(c_b).valid())) { std::cout << "b invalid\n"; std::cin.get(); }
-	if (!(T->cell(c_p).valid())) { std::cout << "p invalid\n"; std::cin.get(); }
-	if (!(T->cell(c_q).valid())) { std::cout << "q invalid\n"; std::cin.get(); }
-	
-	std::cout << "END\n";
-	T->cell(c_p).outputVertices(); T->cell(c_p).outputEdgeVertices(); 
-	T->cell(c_q).outputVertices(); T->cell(c_q).outputEdgeVertices();*/
+
 	T->destroyVertex(this);
 	v_a->orderCellContacts(); v_b->orderCellContacts();
 	for (Cell* c : v_a->cellContacts()) c->findNeighbours(); 
 	for (Cell* c : v_b->cellContacts()) c->findNeighbours();
-	std::cout << "T1 split\n";
+	//std::cout << "T1 split\n";
 }
 
 void Vertex::calcm()
