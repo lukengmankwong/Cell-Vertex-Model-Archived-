@@ -7,4 +7,4 @@ Requirements:
 
 Paraview recommended for viewing.
 
-Archived. Imrpoved code: https://github.com/lukengmankwong/Cell-Vertex-Model .
+Archived. Improved code: https://github.com/lukengmankwong/Cell-Vertex-Model .
